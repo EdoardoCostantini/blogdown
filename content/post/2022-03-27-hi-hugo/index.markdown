@@ -1,10 +1,10 @@
 ---
-title: Hi Hugo
-author: R package build
+title: What's the deal with the weighted covariance matrix?
+author: Edo
 date: '2022-03-27'
 slug: hi-hugo
 categories: []
-tags: []
+tags: ["statistics"]
 subtitle: ''
 summary: ''
 authors: []

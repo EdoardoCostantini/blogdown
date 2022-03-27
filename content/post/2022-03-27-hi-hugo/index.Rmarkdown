@@ -2,10 +2,21 @@
 title: Hi Hugo
 author: R package build
 date: '2022-03-27'
-slug: []
+slug: hi-hugo
 categories: []
-tags: ["statistics"]
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2022-03-27T13:33:08+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
 ---
+
 
 # Introduction
 

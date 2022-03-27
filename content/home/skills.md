@@ -21,10 +21,10 @@ feature:
   icon_pack: fab
   name: R
 - description: wannabe
-  icon: chart-line
-  icon_pack: fas
+  icon: '📊'
+  icon_pack: emoji
   name: Statistics
-- description: I redefine the concept
+- description: I keep raising the bar
   icon: '🧠'
   icon_pack: emoji
   name: Overthinking

@@ -1,39 +1,39 @@
 ---
 # Display name
-title: Alice Bighetti (吳恩達)
+title: Edoardo Costantini (Edo)
 
 # Is this the primary user of the site?
 superuser: true
 
 # Role/position/tagline
-role: Professor of Artificial Intelligence
+role: PhD Researcher
 
 # Organizations/Affiliations to show in About widget
 organizations:
-- name: Stanford University
-  url: https://www.stanford.edu/
+- name: Tilburg University
+  url: https://www.tilburguniversity.edu
 
 # Short bio (displayed in user profile at end of posts)
-bio: My research interests include distributed robotics, mobile computing and programmable matter.
+bio: My research interests are imputation of missing data and principal component analysis.
 
 # Interests to show in About widget
 interests:
-- Artificial Intelligence
-- Computational Linguistics
-- Information Retrieval
+- Missing data
+- Imputation
+- Principal component analysis
 
 # Education to show in About widget
 education:
   courses:
-  - course: PhD in Artificial Intelligence
-    institution: Stanford University
-    year: 2012
-  - course: MEng in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
-    year: 2009
-  - course: BSc in Artificial Intelligence
-    institution: Massachusetts Institute of Technology
-    year: 2008
+  - course: PhD in Statistics
+    institution: Tilburg University, The Netherlands
+    year: 2023
+  - course: Research Master in Social and Behavioral Sciences
+    institution: Tilburg University, The Netherlands
+    year: 2019
+  - course: BSc in Sociology
+    institution: Trento University, Italy
+    year: 202017
 
 # Social/Academic Networking
 # For available icons, see: https://wowchemy.com/docs/getting-started/page-builder/#icons

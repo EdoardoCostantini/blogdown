@@ -18,7 +18,7 @@ projects: []
 ---
 
 
-# Introduction2
+# Introduction
 
 When there are many correlated variables in a linear regression model, their coefficients can become poorly determined and exhibit high variance. By imposing a size constraint (or penalty) on the coefficients this problem is alleviated.
 

@@ -1,0 +1,100 @@
+---
+title: The sweep operator
+author: Edoardo Costantini
+date: '2021-11-17'
+slug: sweep
+categories: ["Tutorials", "Drafts"]
+tags: ["statistics", "regression"]
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2022-04-02T15:33:01+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+```{r set up, echo = FALSE, results = 'hide', message = FALSE, warning = FALSE}
+
+# Packages and functions
+source("sweepGoodnight.R") # main sweep function
+library(ISR3)                  # for SWP functions
+library(fastmatrix)            # alternative sweep
+
+# Take the mtcars data
+y <- mtcars[, "mpg"]
+X <- mtcars[, -1]
+
+# Create a few shorthands we will use
+n <- nrow(X)
+p <- ncol(X)
+
+```
+
+chck the function is here
+
+```{r check sweep}
+sweepGoodnight
+
+```
+# Introduction
+
+For this post, we will work with the data used by Little and Rubin on page 152.
+
+```{r load data}
+# Load Little Rubin data -------------------------------------------------------
+
+# Create data
+  dat <- as.data.frame(
+          matrix(
+                  data = c(7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10, 26,
+                           29, 56, 31, 52, 55, 71 ,31, 54, 47, 40, 66, 68,
+                           6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8,
+                           60, 52, 20, 47, 33, 22,6,44,22,26,34,12,12,
+                           78.5, 74.3, 104.3, 87.6, 95.9, 109.2, 102.7,
+                           72.5, 93.1, 115.9, 83.8, 113.3, 109.4),
+                  ncol = 5
+          )
+  )
+
+# Store useful information
+  n <- nrow(dat)
+  p <- ncol(dat)
+
+```
+
+We will use the sweep operator to compute the regression coefficients of different multivairate linear models.
+First, let's see how we would obtain these linear moldes in R with standard procedures.
+Let's start by fitting an intercept only multivariate linear model.
+Let's regress `V5` and `V4` on a vector of `1s`.
+
+```{r mlm intercept only}
+# Fit some multivariate linear models ------------------------------------------
+
+# Multivariate intercept only model
+  # Define the dvs
+  dvs <- c("V5", "V4")
+
+  # Complicated but flexible way of writing the formula
+  formula_lm <- paste0("cbind(",
+                       paste0(dvs, collapse = ", "),
+                       ") ~ 1")
+
+  # Fit the model with the MLM
+  mlm0 <- lm(formula_lm, data = dat)
+
+  # Do it with sweep shortcut
+  coef(mlm0)
+  # sweepGoodnight(T0, 1)["int", dvs]
+  # sweepGoodnight(G, 1)["int", dvs]
+  # theta["int", dvs]
+
+
+```
+
+# TL;DR, just give me the code!
+```{r TLDR, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

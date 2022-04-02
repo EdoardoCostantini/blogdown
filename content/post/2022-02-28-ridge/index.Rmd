@@ -249,5 +249,5 @@ round(
 
 ```
 # TL;DR, just give me the code!
-```{r  TLDR, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```{r TLDR, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
 ```

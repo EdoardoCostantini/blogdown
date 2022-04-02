@@ -1,0 +1,449 @@
+---
+title: Ridge regression trial post
+author: R package build
+date: '2022-04-02'
+slug: rmd-post
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2022-04-02T11:12:51+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4          # up to three depths of headings (specified by #, ## and ###)
+    number_sections: true
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#learn-by-coding"><span class="toc-section-number">2</span> Learn by coding</a>
+<ul>
+<li><a href="#fitting-ridge-regression-manually"><span class="toc-section-number">2.1</span> Fitting ridge regression manually</a>
+<ul>
+<li><a href="#an-alternative-way-to-avoid-penalising-the-intercept"><span class="toc-section-number">2.1.1</span> An alternative way to avoid penalising the intercept</a></li>
+</ul></li>
+<li><a href="#fit-ridge-regression-with-r-packages"><span class="toc-section-number">2.2</span> Fit ridge regression with R packages</a>
+<ul>
+<li><a href="#use-the-biased-estimation-of-variance"><span class="toc-section-number">2.2.1</span> Use the biased estimation of variance</a></li>
+<li><a href="#return-the-unstandardized-coefficients"><span class="toc-section-number">2.2.2</span> Return the unstandardized coefficients</a></li>
+<li><a href="#adjust-the-parametrization-of-lambda-for-glmnet"><span class="toc-section-number">2.2.3</span> Adjust the parametrization of <span class="math inline">\(\lambda\)</span> for <code>glmnet</code></a></li>
+<li><a href="#compare-manual-and-glmnet-ridge-regression-output"><span class="toc-section-number">2.2.4</span> Compare manual and <code>glmnet</code> ridge regression output</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#tldr-just-give-me-the-code"><span class="toc-section-number">3</span> TL;DR, just give me the code!</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
+<p>When there are many correlated variables in a linear regression model, their coefficients can become poorly determined and exhibit high variance. This problem is alleviated by imposing a size constraint (or penalty) on the coefficients.</p>
+<p>Ridge regression shrinks the regression coefficients by imposing a penalty on their size. The ridge coefficients minimize a penalized residual sum of squares:</p>
+<p><span class="math display">\[
+\hat{\beta}^{\text{ridge}} = \text{argmin}_{\beta} \left\{ \sum_{i=1}^{N} \left( y_i - \beta_0 - \sum_{j=1}^{p} x_{ij}\beta_j \right)^2 + \lambda \sum_{j=1}^{p}\beta_j^2 \right\}
+\]</span></p>
+<p>with a one-to-one correspondence between the <span class="math inline">\(\sigma\)</span> and <span class="math inline">\(t\)</span> parameters.
+The ridge solutions are not equivariant under scaling of the inputs
+Therefore, we better standardize the inputs before solving the minimization problem.</p>
+<p>Notice that the intercept <span class="math inline">\(\beta_0\)</span> has been left out of the penalty term. Penalization of the intercept would make the procedure depend on the origin chosen for <span class="math inline">\(Y\)</span>. By centering the predictors inputs, we can separate the solution to the <a href="https://www.notion.so/Ridge-regression-8134d8babda5413ab182df645c6196a8">minimazion problem</a> into two parts:</p>
+<ul>
+<li><p>Intercept
+<span class="math display">\[
+\beta_0 = \bar{y}=\frac{1}{N}\sum_{i = 1}^{N} y_i
+\]</span></p></li>
+<li><p>Penalised regression coefficinets
+<span class="math display">\[
+\hat{\beta}^{\text{ridge}}=(\mathbf{X}^T\mathbf{X} + \lambda \mathbf{I})^{-1}\mathbf{X}^Ty
+\]</span>
+which is the regular way of estimating regression coefficients with an added penalty term (<span class="math inline">\(\lambda \mathbf{I}\)</span>) on the diagonal of the cross-product matrix (<span class="math inline">\(\mathbf{X}^T\mathbf{X}\)</span>) to make it invertible (<span class="math inline">\((...)^{-1}\)</span>).</p></li>
+</ul>
+</div>
+<div id="learn-by-coding" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Learn by coding</h1>
+<p>First let’s set up the R environment.
+We’ll use the <code>glmnet</code> to check how other people have implemented the same concepts.
+For these notes, we will work with the <code>mtcars</code> data.
+We will use the first column of the dataset (variable named <code>mpg</code>) as a dependent variable and the remaining ones as predictors.</p>
+<pre class="r"><code># Load packages
+library(glmnet)
+
+# Take the mtcars data
+y &lt;- mtcars[, &quot;mpg&quot;]
+X &lt;- mtcars[, -1]
+
+# Create a few shorthands we will use
+n &lt;- nrow(X)
+p &lt;- ncol(X)</code></pre>
+<div id="fitting-ridge-regression-manually" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Fitting ridge regression manually</h2>
+<p>First, let’s <strong>fit ridge regression</strong> manually by separating the intercept and the regression coefficients estimation (two-step approach):</p>
+<pre class="r"><code># Scale the data (standardize)
+X_scale &lt;- scale(X, center = TRUE, scale = TRUE)
+
+# Compute the cross-product matrix of the data
+XtX &lt;- t(X_scale) %*% X_scale
+
+# Define the identify matrix
+I &lt;- diag(ncol(X_scale))
+
+# Define a lambda value
+lambda &lt;- .1
+
+# Estimate the regression coefficients with the ridge penalty
+bs_hat_r &lt;- solve(XtX + lambda * I) %*% t(X_scale) %*% y
+
+# Estimate the intercept
+b0_hat_r &lt;- mean(y)
+
+# Print the results
+round(
+        data.frame(twostep = c(b0 = b0_hat_r, b = bs_hat_r)),
+        3
+)</code></pre>
+<pre><code>##     twostep
+## b0   20.091
+## b1   -0.194
+## b2    1.366
+## b3   -1.373
+## b4    0.438
+## b5   -3.389
+## b6    1.361
+## b7    0.162
+## b8    1.243
+## b9    0.496
+## b10  -0.460</code></pre>
+<p>It is important to note the effect of centering and scaling.
+When fitting ridge regression, many sources reccomend to center the data.
+This allows to separate the estimation of the intercept from the estimation of the regression coefficients.
+As a result, only the regression coefficients are penalised.
+To understand the effect of centering, consider what happens in regular OLS estimation when <strong>predictors are centered</strong>:</p>
+<pre class="r"><code># Create a version of X that is centered
+X_center &lt;- scale(X, center = TRUE, scale = FALSE)
+
+# Fit an regular linear model
+lm_ols &lt;- lm(y ~ X_center)
+
+# Check that b0 is equal to the mean of y
+coef(lm_ols)[&quot;(Intercept)&quot;] - mean(y)</code></pre>
+<pre><code>##   (Intercept) 
+## -3.552714e-15</code></pre>
+<p>As for <strong>scaling</strong>, the important thing to not for now is that scaling allows the penalty term to act in the same way independently of the scale of the predictors.</p>
+<div id="an-alternative-way-to-avoid-penalising-the-intercept" class="section level3" number="2.1.1">
+<h3><span class="header-section-number">2.1.1</span> An alternative way to avoid penalising the intercept</h3>
+<p>We can also avoid the penalisation of the intercept by setting to 0 the corresponding element in the <code>pen</code> object.
+By doing so, we can obtain the estimate of the intercept and the penalised regression coefficients in one step.</p>
+<pre class="r"><code>  # Create desing matrix with intercept
+  X_scale_dm &lt;- cbind(1, X_scale)
+
+  # Compute cross-product matrix
+  XtX &lt;- crossprod(X_scale_dm)
+
+  # Create penalty matrix
+  pen &lt;- lambda * diag(p + 1)
+  pen[1] &lt;- 0
+
+  # Obtain standardized estimates
+  bs_hat_r2 &lt;- solve(XtX + pen) %*% t(X_scale_dm) %*% (y)
+
+  # Compare
+  round(
+          data.frame(
+                  twostep = c(b0 = b0_hat_r, b = bs_hat_r),
+                  onestep = drop(bs_hat_r2)
+          ),
+          3
+  )</code></pre>
+<pre><code>##     twostep onestep
+## b0   20.091  20.091
+## b1   -0.194  -0.194
+## b2    1.366   1.366
+## b3   -1.373  -1.373
+## b4    0.438   0.438
+## b5   -3.389  -3.389
+## b6    1.361   1.361
+## b7    0.162   0.162
+## b8    1.243   1.243
+## b9    0.496   0.496
+## b10  -0.460  -0.460</code></pre>
+</div>
+</div>
+<div id="fit-ridge-regression-with-r-packages" class="section level2" number="2.2">
+<h2><span class="header-section-number">2.2</span> Fit ridge regression with R packages</h2>
+<p>The most popular R package for regularised regression is <code>glmnet</code>.
+Let’s see how we can replicate the results we obtained with the manual approach with glmnet.
+There are three important differences to consider:</p>
+<ul>
+<li>glmnet uses the biased version of variance estimation when scaling</li>
+<li>glmnet returns the unstandardized regression coefficients</li>
+<li>glmnet uses a different parametrization of lambda</li>
+</ul>
+<p>To replicate the results we need to account for these.</p>
+<div id="use-the-biased-estimation-of-variance" class="section level3" number="2.2.1">
+<h3><span class="header-section-number">2.2.1</span> Use the biased estimation of variance</h3>
+<p>First, let’s obtain the results with the biased variance estimation:</p>
+<pre class="r"><code># Standardize X
+X_scale &lt;- sapply(1:p, function (j){
+  muj &lt;- mean(X[, j])
+  sj &lt;- sqrt( var(X[, j]) * (n-1) / n) # biased sd
+  (X[, j] - muj) / sj                  # standardize
+})
+
+# Craete desing matrix with intercept
+X_scale_dm &lt;- cbind(1, X_scale)
+
+# Compute cross-product matrix
+XtX &lt;- crossprod(X_scale_dm)
+
+# Create penalty matrix
+pen &lt;- lambda * diag(p + 1)
+pen[1] &lt;- 0
+
+# Obtain standardized estimates
+bs_hat_r3 &lt;- solve(XtX + pen) %*% t(X_scale_dm) %*% (y)
+
+# Print results
+round(
+      data.frame(
+              manual = drop(bs_hat_r3)
+      ),
+      3
+)</code></pre>
+<pre><code>##    manual
+## 1  20.091
+## 2  -0.191
+## 3   1.353
+## 4  -1.354
+## 5   0.430
+## 6  -3.343
+## 7   1.343
+## 8   0.159
+## 9   1.224
+## 10  0.488
+## 11 -0.449</code></pre>
+</div>
+<div id="return-the-unstandardized-coefficients" class="section level3" number="2.2.2">
+<h3><span class="header-section-number">2.2.2</span> Return the unstandardized coefficients</h3>
+<p>Next, we need to revert these regression coefficients to their original scale.</p>
+<pre class="r"><code># Extract the original mean and standard deviations of all X variables
+mean_x &lt;- colMeans(X)
+sd_x &lt;- sqrt(apply(X, 2, var) * (n - 1) / n) # biased version
+
+# Revert to original scale
+bs_hat_r4 &lt;- c(bs_hat_r3[1] - crossprod(mean_x, bs_hat_r3[-1] / sd_x),
+               bs_hat_r3[-1] / sd_x)
+
+# Compare manual standardized and unstandardized results
+round(
+      data.frame(
+              standardized = drop(bs_hat_r3),
+              unstandardized = drop(bs_hat_r4)
+      ),
+      3
+)</code></pre>
+<pre><code>##      standardized unstandardized
+##            20.091         12.908
+## cyl        -0.191         -0.109
+## disp        1.353          0.011
+## hp         -1.354         -0.020
+## drat        0.430          0.818
+## wt         -3.343         -3.471
+## qsec        1.343          0.764
+## vs          0.159          0.320
+## am          1.224          2.491
+## gear        0.488          0.672
+## carb       -0.449         -0.282</code></pre>
+</div>
+<div id="adjust-the-parametrization-of-lambda-for-glmnet" class="section level3" number="2.2.3">
+<h3><span class="header-section-number">2.2.3</span> Adjust the parametrization of <span class="math inline">\(\lambda\)</span> for <code>glmnet</code></h3>
+<p>Next, we can use <code>glmnet</code> to fit the ridge regression.
+Pay attention to the fact that the value of lambda has been reparametrized for the <code>glmnet()</code> function.</p>
+<pre class="r"><code># Extract the original mean and standard deviations of y (for lambda parametrization)
+mean_y &lt;- mean(y)
+sd_y &lt;- sqrt(var(y) * (n - 1) / n)
+
+# Compute the value glmnet wants for your target lambda
+lambda_glmnet &lt;- sd_y * lambda / n</code></pre>
+</div>
+<div id="compare-manual-and-glmnet-ridge-regression-output" class="section level3" number="2.2.4">
+<h3><span class="header-section-number">2.2.4</span> Compare manual and <code>glmnet</code> ridge regression output</h3>
+<p>Finally, we can compare the results:</p>
+<pre class="r"><code># Fit glmnet
+fit_glmnet_s &lt;- glmnet(x = X,
+                       y = y,
+                       alpha = 0,
+                       lambda = lambda_glmnet, # correction for how penalty is used
+                       thresh = 1e-20)
+
+bs_glmnet &lt;- coef(fit_glmnet_s)
+
+# Compare estimated coefficients
+round(
+      data.frame(
+        manual = drop(bs_hat_r4),
+        glmnet = drop(bs_glmnet)
+      ),
+      3
+)</code></pre>
+<pre><code>##      manual glmnet
+##      12.908 12.908
+## cyl  -0.109 -0.109
+## disp  0.011  0.011
+## hp   -0.020 -0.020
+## drat  0.818  0.818
+## wt   -3.471 -3.471
+## qsec  0.764  0.764
+## vs    0.320  0.320
+## am    2.491  2.491
+## gear  0.672  0.672
+## carb -0.282 -0.282</code></pre>
+</div>
+</div>
+</div>
+<div id="tldr-just-give-me-the-code" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> TL;DR, just give me the code!</h1>
+<pre class="r"><code># Load packages
+library(glmnet)
+
+# Take the mtcars data
+y &lt;- mtcars[, &quot;mpg&quot;]
+X &lt;- mtcars[, -1]
+
+# Create a few shorthands we will use
+n &lt;- nrow(X)
+p &lt;- ncol(X)
+
+# Scale the data (standardize)
+X_scale &lt;- scale(X, center = TRUE, scale = TRUE)
+
+# Compute the cross-product matrix of the data
+XtX &lt;- t(X_scale) %*% X_scale
+
+# Define the identify matrix
+I &lt;- diag(ncol(X_scale))
+
+# Define a lambda value
+lambda &lt;- .1
+
+# Estimate the regression coefficients with the ridge penalty
+bs_hat_r &lt;- solve(XtX + lambda * I) %*% t(X_scale) %*% y
+
+# Estimate the intercept
+b0_hat_r &lt;- mean(y)
+
+# Print the results
+round(
+        data.frame(twostep = c(b0 = b0_hat_r, b = bs_hat_r)),
+        3
+)
+
+# Create a version of X that is centered
+X_center &lt;- scale(X, center = TRUE, scale = FALSE)
+
+# Fit an regular linear model
+lm_ols &lt;- lm(y ~ X_center)
+
+# Check that b0 is equal to the mean of y
+coef(lm_ols)[&quot;(Intercept)&quot;] - mean(y)
+
+  # Create desing matrix with intercept
+  X_scale_dm &lt;- cbind(1, X_scale)
+
+  # Compute cross-product matrix
+  XtX &lt;- crossprod(X_scale_dm)
+
+  # Create penalty matrix
+  pen &lt;- lambda * diag(p + 1)
+  pen[1] &lt;- 0
+
+  # Obtain standardized estimates
+  bs_hat_r2 &lt;- solve(XtX + pen) %*% t(X_scale_dm) %*% (y)
+
+  # Compare
+  round(
+          data.frame(
+                  twostep = c(b0 = b0_hat_r, b = bs_hat_r),
+                  onestep = drop(bs_hat_r2)
+          ),
+          3
+  )
+
+# Standardize X
+X_scale &lt;- sapply(1:p, function (j){
+  muj &lt;- mean(X[, j])
+  sj &lt;- sqrt( var(X[, j]) * (n-1) / n) # biased sd
+  (X[, j] - muj) / sj                  # standardize
+})
+
+# Craete desing matrix with intercept
+X_scale_dm &lt;- cbind(1, X_scale)
+
+# Compute cross-product matrix
+XtX &lt;- crossprod(X_scale_dm)
+
+# Create penalty matrix
+pen &lt;- lambda * diag(p + 1)
+pen[1] &lt;- 0
+
+# Obtain standardized estimates
+bs_hat_r3 &lt;- solve(XtX + pen) %*% t(X_scale_dm) %*% (y)
+
+# Print results
+round(
+      data.frame(
+              manual = drop(bs_hat_r3)
+      ),
+      3
+)
+
+# Extract the original mean and standard deviations of all X variables
+mean_x &lt;- colMeans(X)
+sd_x &lt;- sqrt(apply(X, 2, var) * (n - 1) / n) # biased version
+
+# Revert to original scale
+bs_hat_r4 &lt;- c(bs_hat_r3[1] - crossprod(mean_x, bs_hat_r3[-1] / sd_x),
+               bs_hat_r3[-1] / sd_x)
+
+# Compare manual standardized and unstandardized results
+round(
+      data.frame(
+              standardized = drop(bs_hat_r3),
+              unstandardized = drop(bs_hat_r4)
+      ),
+      3
+)
+
+# Extract the original mean and standard deviations of y (for lambda parametrization)
+mean_y &lt;- mean(y)
+sd_y &lt;- sqrt(var(y) * (n - 1) / n)
+
+# Compute the value glmnet wants for your target lambda
+lambda_glmnet &lt;- sd_y * lambda / n
+
+# Fit glmnet
+fit_glmnet_s &lt;- glmnet(x = X,
+                       y = y,
+                       alpha = 0,
+                       lambda = lambda_glmnet, # correction for how penalty is used
+                       thresh = 1e-20)
+
+bs_glmnet &lt;- coef(fit_glmnet_s)
+
+# Compare estimated coefficients
+round(
+      data.frame(
+        manual = drop(bs_hat_r4),
+        glmnet = drop(bs_glmnet)
+      ),
+      3
+)</code></pre>
+</div>

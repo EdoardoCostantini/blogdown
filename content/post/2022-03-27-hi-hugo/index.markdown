@@ -20,7 +20,7 @@ projects: []
 
 # Introduction
 
-When there are many correlated variables in a linear regression model, their coefficients can become poorly determined and exhibit high variance. By imposing a size constraint (or penalty) on the coefficients this problem is alleviated.
+When there are many correlated variables in a linear regression model, their coefficients can become poorly determined and exhibit high variance. This problem is alleviated by imposing a size constraint (or penalty) on the coefficients.
 
 Ridge regression shrinks the regression coefficients by imposing a penalty on their size. The ridge coefficients minimize a penalized residual sum of squares:
 
@@ -28,10 +28,11 @@ $$
 \hat{\beta}^{\text{ridge}} = \text{argmin}_{\beta} \left\{ \sum_{i=1}^{N} \left( y_i - \beta_0 - \sum_{j=1}^{p} x_{ij}\beta_j \right)^2 + \lambda \sum_{j=1}^{p}\beta_j^2 \right\}
 $$
 
-with a one to one correspondence between the `\(\lambda\)` and `\(t\)` parameters.
-The ridge solutions are not equivariant under scaling of the inputs, and so one normally standardizes the inputs before solving the minimization problem.
+with a one-to-one correspondence between the $ \sigma $ and $ t $ parameters.
+The ridge solutions are not equivariant under scaling of the inputs
+Therefore, we better standardize the inputs before solving the minimization problem.
 
-Notice that the intercept `\(\beta_0\)` has been left out of the penalty term. Penalization of the intercept would make the procedure depend on the origin chosen for Y. By centering the predictors inputs, we can separate the solution to the [minimazion problem](https://www.notion.so/Ridge-regression-8134d8babda5413ab182df645c6196a8) into two parts:
+Notice that the intercept $ \beta_0 $ has been left out of the penalty term. Penalization of the intercept would make the procedure depend on the origin chosen for $ Y $. By centering the predictors inputs, we can separate the solution to the [minimazion problem](https://www.notion.so/Ridge-regression-8134d8babda5413ab182df645c6196a8) into two parts:
 
 - Intercept
 $$

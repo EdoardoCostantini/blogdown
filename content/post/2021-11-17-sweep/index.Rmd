@@ -92,6 +92,7 @@ Let's take a quick look at the first rows of the data to get an idea of what we 
 ```{r check X}
 # Glace at the first 6 rows of the data
   head(X)
+
 ```
 
 ## Compute the augmented covariance matrix
@@ -155,7 +156,7 @@ We will use the sweep operator to compute the regression coefficients of differe
 
 ## Sweep operator functions in R
 
-I can use mine and I can show other people's functions.
+I can use mine, and I can show other people's functions.
 
 ## Estimate multivariate linear models
 

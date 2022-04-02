@@ -28,7 +28,7 @@ output:
 In a sample made of groups of different sizes, descriptive statistics like the mean and the covariance between variables can be computed by assigning proper weights to account for the difference in group sizes.
  Wights are generally normalized (i.e., $\sum_{i = 1}^{n} w_i = 1$).
 
-# Learn by coding AGAIN
+# Learn by coding
 
 ## Example
 

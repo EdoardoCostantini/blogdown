@@ -4,15 +4,18 @@
 #   The weight parameter defines the order that the links will appear in.
 
 main:
-  - name: About
-    url: '#about'
-    weight: 10
-  - name: Recent Posts
-    url: '#posts'
-    weight: 20
-  - name: Tutorials
-    url: '#tutorials'
-    weight: 20
+  - name: "Posts"  # A link title for your page.
+    url: "post/"  # The URL of your page.
+    weight: 20  # The position of your page in the menu.
+#  - name: About
+#    url: '#about'
+#    weight: 10
+#  - name: Recent Posts
+#    url: '#posts'
+#    weight: 20
+#  - name: Tags
+#    url: '#tags'
+#    weight: 20
 #   - name: Projects
 #     url: '#projects'
 #     weight: 30

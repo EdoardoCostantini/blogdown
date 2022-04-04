@@ -44,6 +44,7 @@ p <- ncol(X)
 
 The sweep operator is commonly used in linear model computation.
 It performs elementary row operations on a $p \times p$ matrix which happen to be particularly useful for the estimation of multivariate linear models.
+The sweep operator is often written as SWEEP(k)[G], which can be read as sweeping matrix G on row and column k.
 Little and Rubin [-@littleRubin:2002 p148] defined it as follows:
 
 > The sweep operator is defined for symmetric matrices as follows. A $p \times p$ symmetric matrix G is said to be swept on row and column k if it is replaced by another symmetric $p \times p$ matrix H with elements defined as follows:
@@ -59,9 +60,96 @@ Little and Rubin [-@littleRubin:2002 p148] defined it as follows:
 
 In this post, I'm interested in exploring how we use the sweep operator in the estimation of the parameters of linear models.
 What is important to note is that when we want to sweep a symmetric matrix G over the row and column k we are simply replacing the elements of G with the results of these three equations.
-If you are interested in the details of these equations, I recommend reading the full sweep operator description in Schafer Little and the Original paper.
+If you are interested in the details of these equations, I recommend reading the full sweep operator description in one of the following resources: Goodnight [-@goodnight:1979 p154], Schafer [-@schafer:1997], Little and Rubin [-@littleRubin:2002 p148].
+
+Goodnight [-@goodnight:1979 p150] is a particularly helpful paper as it describes an easy to implement algorithm to perform the sweep operator.
+In particular, following Goodnight, given an originally symmetric positive definite matrix G, SWEEP(k)[G] modifies a matrix G as follows:
+
+- Step 1: Let $D = g_{kk}$
+- Step 2: Divide row $k$ by $D$.
+- Step 3: For every other row $i \neq k$, let $B = g_{ik}$. Sub-tract $B \times$ row $k$ from row $i$. Set $g_{ik} = -B/D$.
+- Step 4: Set $g_{kk} = 1/D$.
 
 # Learn by coding
+
+## Coding a sweep function in R
+
+Let's start by coding a simple function that performs the operations described by Goodnight [-@goodnight:1979 p150].
+We want a function that takes as inputs a symmetric matrix (argument `G`) and a vector of position to sweep over (argument `K`).
+The function below takes these two inputs and performs the four sweep steps for every element of K.
+
+```{r sweep function}
+# Write an R function implementing SWEEP(k)[G] according to Goodnight ----------
+
+sweepGoodnight <- function (G, K){
+
+  for(k in K){
+    # Step 1: Let D = g_kk
+    D <- G[k, k]
+
+    # Step 2: Divide row k by D.
+    G[k, ] <- G[k, ] / D
+
+    # Step 3:
+    # - For every other row i != k, let B = g_ik
+    # - Subtract B \times row k from row i.
+    # - set g_ik = -B/D.
+    for(i in 1:nrow(G)){
+      if(i != k){
+        B <- G[i, k]
+        G[i, ] <- G[i, ] - B * G[k, ]
+        G[i, k] <- -1 * B / D
+      }
+    }
+    # Step 4: Set g_kk = 1/D
+    G[k, k] = 1/D
+  }
+
+  # Output
+  return(G)
+}
+
+```
+
+Let's check that this function returns what we want by comparing it with a function implemented by someone else.
+
+```{r compare sweeps, results = 'hide'}
+# Compare sweepGoodnight with other implementations ----------------------------
+
+# Install the `fastmatrix` package (run if you don't have it yet)
+# install.packages("fastmatrix")
+
+# Load fastmatrix
+library(fastmatrix)
+
+# Define an example dataset
+X <- matrix(c(1, 1, 1, 1,
+              1, 2, 1, 3,
+              1, 3, 1, 3,
+              1, 1,-1, 2,
+              1, 2,-1, 2,
+              1, 3,-1, 1), ncol = 4, byrow = TRUE)
+
+# Define the G matrix
+G <- crossprod(X)
+
+# Define a vector of position to sweep over
+K <- 1:3
+
+# Perform Sweep[K](G) with fastmatrix sweep.operator
+H_fm <- sweep.operator(G, k = K)
+
+# Perform Sweep[K](G) with our sweepGoodnight implementation
+H_sg <- sweepGoodnight(G, K = K)
+
+# Compare the two
+H_fm - H_sg
+
+```
+
+You will notice that `H_fm - H_sg` returns a $4 \times 4$ matrix of 0s: mission accomplished.
+
+## Using the sweep operator to estimate regression models
 
 To understand the sweep operator we will use it to compute the regression coefficient of a multivariate linear model estimated on an example dataset.
 For this post, we will work with the data used by Little and Rubin [-@littleRubin:2002 p152].
@@ -85,6 +173,7 @@ For this post, we will work with the data used by Little and Rubin [-@littleRubi
 # Store useful information
   n <- nrow(X)
   p <- ncol(X)
+
 ```
 
 Let's take a quick look at the first rows of the data to get an idea of what we are working with.
@@ -95,10 +184,11 @@ Let's take a quick look at the first rows of the data to get an idea of what we 
 
 ```
 
-## Compute the augmented covariance matrix
+### Compute the augmented covariance matrix
 
-The sweep operator gets us the regression coefficients of a multivairate linear model when applied to what is known as the augmented covariance matrix of the data $\Theta$.
+The sweep operator gets us the regression coefficients of a multivairate linear model when applied to what is known as the augmented covariance matrix of the data ($\Theta$).
 This is a $(p+1) \times (p+1)$ matrix storing the covariance matrix and the means of the dataset.
+It usually looks like this:
 
 $$
 \Theta =
@@ -106,11 +196,13 @@ $$
 -1 & \mu_1 & ... &\mu_p\\
 \mu_1 & \sigma^2_1 & ... & \sigma_{1p}\\
 ... & ... & ... & ...\\
-\mu_p & \sigma_{1p} & ... & \sigma^2_{pp}
+\mu_p & \sigma_{1p} & ... & \sigma^2_{p}
 \end{bmatrix}
 $$
 
-Starting from our dataset, we can obtain this matrix in just a few steps:
+with $\mu_1, \dots, \mu_p$, $\sigma^2_1, \dots, \sigma^2_p$, and $\sigma_{jk}$ being the means, variances and covariances of the variables in our dataset, respectively.
+
+In R, we can obtain this matrix in just a few steps starting from our dataset `X`:
 
 - **Augment the original data** with a column of 1s on the left
   ```{r augment X}
@@ -119,11 +211,6 @@ Starting from our dataset, we can obtain this matrix in just a few steps:
   # Augment X
     X_aug <- cbind(int = 1, as.matrix(X))
 
-  ```
-
-  Check out how `X_aug` looks.
-
-  ```{r check augment X}
   # Glance at the first 6 rows of X_aug
     head(X_aug)
 
@@ -132,7 +219,7 @@ Starting from our dataset, we can obtain this matrix in just a few steps:
 - Compute the **augmented matrix of sufficient statistics $T$**.
 
   $T$ is the matrix having as elements the sum of the cross-products of the columns of `X_aug`.
-  Since the first column of `X_aug` is a column of 1s, the first element of T is the number of rows in the data, the first column and rows store the sum of scores on each variable (sufficient statistics for the mean), and the other elements store the sum of products between the columns of `X` (sufficeint statistics for the covariance matrix of `X`).
+  Since the first column of `X_aug` is a column of 1s, the first element of T is the number of rows in the data, the first column and rows store the sum of scores on each variable (sufficient statistics for the mean), and the other elements store the sum of products between the columns of `X` (sufficient statistics for the covariance matrix of `X`).
 
   $$
   T =
@@ -151,46 +238,120 @@ Starting from our dataset, we can obtain this matrix in just a few steps:
 
   ```
 
+- **Transform T to G**
 
-We will use the sweep operator to compute the regression coefficients of different multivairate linear models.
+  $G$ is simply $T / n$
 
-## Sweep operator functions in R
+  $$
+  G =
+  \begin{bmatrix}
+   1 & \mu_1 & ... &\mu_p\\
+   \mu_1 & \frac{\sum{x_1^2}}{n} & ... & \frac{\sum{x_1 x_p}}{n}\\
+   ... & ... & ... & ...\\
+   \mu_p & \frac{\sum{x_1 x_p}}{n} & ... & \frac{\sum{x_p^2}}{n}
+  \end{bmatrix}
+  $$
 
-I can use mine, and I can show other people's functions.
+  ```{r compute G}
+  # Compute G
+    G <- Tmat / n
 
-## Estimate multivariate linear models
+  ```
 
-First, let's compute this matrix based on the data we have at hand.
-First, let's see how we would obtain these linear moldes in R with standard procedures.
-Let's start by fitting an intercept only multivariate linear model.
-Let's regress `V5` and `V4` on a vector of `1s`.
+- **Compute $\Theta$** by sweeping G over the first row and column.
 
-```{r mlm intercept only}
+  Let's use our `sweepGoodnight()` function to perform SWEEP(1)[G] and obtain $\Theta$
+
+  $$
+  \Theta =
+  \begin{bmatrix}
+  -1 & \mu_1 & ... &\mu_p\\
+  \mu_1 & \sigma^2_1 & ... & \sigma_{1p}\\
+  ... & ... & ... & ...\\
+  \mu_p & \sigma_{1p} & ... & \sigma^2_{p}
+  \end{bmatrix}
+  $$
+
+  In R:
+  ```{r compute Theta}
+  # Sweep G over the first position
+    Theta <- sweepGoodnight(G, 1)
+
+  # Check how it looks
+    Theta
+
+  # Check Theta is storing the means in the first row and column
+    colMeans(X)
+
+  # Check Theta is storing the ML covariance matrix everywhere else
+    cov(X) * (n-1) / n
+
+  ```
+
+  Pay attention to a few of things:
+  - The covariance matrix store in $\Theta$ is the Maximum Likelihood version (denominator should be `n` instead of the default `n-1`)
+  - The first element of the `Theta` object is negative, which indicates the matrix has been swept over that row and column.
+  - We could have constructed the object `Theta` just by using `colMeans(X)` and `cov(X) * (n-1) / n` directly.
+    However, it is important to note the relationship between `Tmat`, `G`, and `Theta`.
+    In particular, pay attention to the fact that `Theta` is the result of sweeping `G` in the first position.
+    When I started looking into this topic I did not understand this, and I kept sweeping `Theta` over the first position, resulting in a confusing double sweep of the first column and row.
+    I will get back to this point in a sec.
+
+### Estimate multivariate linear models
+
+Now let's see how we can use $\Theta$ to estimate any multivariate linear model involving the variables in our dataset.
+First, let's see how we would obtain these linear models in R with standard procedures.
+Say we want to regress "V1" and "V3" on "V2", "V4", and "V5".
+We will start by creating a formula for an `lm` function return the model we want.
+
+```{r mlm definition}
 # Fit some multivariate linear models ------------------------------------------
 
-# Multivariate intercept only model
-  # Define the dvs
-  dvs <- c("V5", "V4")
+  # Define the dependent variables (dvs) of the multivairate linear models
+  dvs <- c("V1", "V3")
 
-  # Complicated but flexible way of writing the formula
+  # Define the predictors (ivs) of the multivairate linear models
+  ivs <- c("V2", "V4", "V5")
+
+  # Create the formula (complicated but flexible way)
   formula_lm <- paste0("cbind(",
                        paste0(dvs, collapse = ", "),
-                       ") ~ 1")
+                       ") ~ ",
+                       paste0(ivs, collapse = " + "))
+
+  # Check the formula
+  formula_lm
+
+```
+
+  Next,
+
+```{r mlm estimation}
 
   # Fit the model with the MLM
   mlm0 <- lm(formula_lm, data = X)
-
-  # Do it with sweep shortcut
   coef(mlm0)
-  # sweepGoodnight(T0, 1)["int", dvs]
-  # sweepGoodnight(G, 1)["int", dvs]
-  # theta["int", dvs]
 
+```
+
+  These are our intercepts, and regression coefficients for the multivariate linear model.
+  Now, let's obtain the result with the sweep operator.
+
+```{r sweep to mlm}
+
+  # Define positions to sweep over
+  sweep_over <- which(colnames(G) %in% ivs)
+
+  # Sweep G
+  sweepGoodnight(G, c(1, sweep_over))[c("int", ivs), dvs]
+
+  # Sweep theta (notice we do not sweep over 1)
+  sweepGoodnight(Theta, sweep_over)[c("int", ivs), dvs]
 
 ```
 
 # TL;DR, just give me the code!
-```{r TLDR, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+```{r TLDR, ref.label = knitr::all_labels(), echo=TRUE, eval=FALSE}
 ```
 
 # References

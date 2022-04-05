@@ -44,9 +44,8 @@ output:
 
 <div id="introduction" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>The sweep operator is commonly used in linear model computation.
+<p>The sweep operator is a matrix transformation commonly used to estimate regression models.
 It performs elementary row operations on a <span class="math inline">\(p \times p\)</span> matrix which happen to be particularly useful for the estimation of multivariate linear models.
-The sweep operator is often written as SWEEP(k)[G], which can be read as sweeping matrix G on row and column k.
 Little and Rubin <span class="citation">(<a href="#ref-littleRubin:2002" role="doc-biblioref">2002, p148</a>)</span> defined it as follows:</p>
 <blockquote>
 <p>The sweep operator is defined for symmetric matrices as follows. A <span class="math inline">\(p \times p\)</span> symmetric matrix G is said to be swept on row and column k if it is replaced by another symmetric <span class="math inline">\(p \times p\)</span> matrix H with elements defined as follows:
@@ -60,11 +59,11 @@ h_{jk} = h_{kj} = \frac{g_{jk}}{g_{kk}}, j \neq k
 h_{jl} = g_{jl} - \frac{g_{jk}g_{kl}}{g_{kk}}, j \neq k, l \neq k
 \]</span></p>
 </blockquote>
-<p>In this post, I’m interested in exploring how we use the sweep operator in the estimation of the parameters of linear models.
-What is important to note is that when we want to sweep a symmetric matrix G over the row and column k we are simply replacing the elements of G with the results of these three equations.
-If you are interested in the details of these equations, I recommend reading the full sweep operator description in one of the following resources: Goodnight <span class="citation">(<a href="#ref-goodnight:1979" role="doc-biblioref">1979, p154</a>)</span>, Schafer <span class="citation">(<a href="#ref-schafer:1997" role="doc-biblioref">1997</a>)</span>, Little and Rubin <span class="citation">(<a href="#ref-littleRubin:2002" role="doc-biblioref">2002, p148</a>)</span>.</p>
+<p>The notation indicating this transformation is usually a variation of SWEEP(k)[G], which can be read as sweeping matrix G on row and column k.</p>
+<p>In this post, I’m interested in exploring how we use the sweep operator to estimate the parameters of regressions models.
+If you are interested in the mathematical details, I recommend reading the full sweep operator description in one of the following resources: Goodnight <span class="citation">(<a href="#ref-goodnight:1979" role="doc-biblioref">1979, p154</a>)</span>, Schafer <span class="citation">(<a href="#ref-schafer:1997" role="doc-biblioref">1997</a>)</span>, Little and Rubin <span class="citation">(<a href="#ref-littleRubin:2002" role="doc-biblioref">2002, p148</a>)</span>.</p>
 <p>Goodnight <span class="citation">(<a href="#ref-goodnight:1979" role="doc-biblioref">1979, p150</a>)</span> is a particularly helpful paper as it describes an easy to implement algorithm to perform the sweep operator.
-In particular, following Goodnight, given an originally symmetric positive definite matrix G, SWEEP(k)[G] modifies a matrix G as follows:</p>
+Following Goodnight, given an originally symmetric positive definite matrix G, SWEEP(k)[G] modifies a matrix G as follows:</p>
 <ul>
 <li>Step 1: Let <span class="math inline">\(D = g_{kk}\)</span></li>
 <li>Step 2: Divide row <span class="math inline">\(k\)</span> by <span class="math inline">\(D\)</span>.</li>
@@ -77,8 +76,8 @@ In particular, following Goodnight, given an originally symmetric positive defin
 <div id="coding-a-sweep-function-in-r" class="section level2" number="2.1">
 <h2><span class="header-section-number">2.1</span> Coding a sweep function in R</h2>
 <p>Let’s start by coding a simple function that performs the operations described by Goodnight <span class="citation">(<a href="#ref-goodnight:1979" role="doc-biblioref">1979, p150</a>)</span>.
-We want a function that takes as inputs a symmetric matrix (argument <code>G</code>) and a vector of position to sweep over (argument <code>K</code>).
-The function below takes these two inputs and performs the four sweep steps for every element of K.</p>
+We want a function that takes as inputs a symmetric matrix (argument <code>G</code>) and a vector of positions to sweep over (argument <code>K</code>).
+The function below takes these two inputs and performs the four sweep steps for every element of <code>K</code>.</p>
 <pre class="r"><code># Write an R function implementing SWEEP(k)[G] according to Goodnight ----------
 
 sweepGoodnight &lt;- function (G, K){
@@ -285,7 +284,7 @@ I will get back to this point in a sec.</li>
 <h3><span class="header-section-number">2.2.2</span> Estimate multivariate linear models</h3>
 <p>Now let’s see how we can use <span class="math inline">\(\Theta\)</span> to estimate any multivariate linear model involving the variables in our dataset.
 First, let’s see how we would obtain these linear models in R with standard procedures.
-Say we want to regress “V1” and “V3” on “V2,” “V4,” and “V5.”
+Say we want to regress V1 and V3 on V2, V4, and V5.
 We will start by creating a formula for an <code>lm</code> function return the model we want.</p>
 <pre class="r"><code># Fit some multivariate linear models ------------------------------------------
 
@@ -314,11 +313,48 @@ We will start by creating a formula for an <code>lm</code> function return the m
 ## V4            0.1455375  -1.0485195
 ## V5            0.6507081  -0.6319507</code></pre>
 <p>These are our intercepts, and regression coefficients for the multivariate linear model.
-Now, let’s obtain the result with the sweep operator.</p>
-<pre class="r"><code>  # Define positions to sweep over
-  sweep_over &lt;- which(colnames(G) %in% ivs)
+Given a <span class="math inline">\(\Theta\)</span> matrix, we can sweep on the positions of the independent variables to obtain the regression coefficients of all the multivariate linear model with the variables we did not sweep over as dependent variables.
+First, let’s define a vector of positions to sweep over based on the variable names we stored in <code>ivs</code>.</p>
+<pre class="r"><code># Fit some multivariate linear models using sweep ------------------------------
 
-  # Sweep G
+  # Define positions to sweep over
+  sweep_over &lt;- which(colnames(G) %in% ivs)</code></pre>
+<p>Then, let’s simply sweep our <span class="math inline">\(\Theta\)</span> over these positions.</p>
+<pre class="r"><code>  # Sweep theta
+  H &lt;- sweepGoodnight(Theta, K = sweep_over)
+
+  # Check out the result
+  H</code></pre>
+<pre><code>##             int          V1           V2          V3           V4           V5
+## int  612.422481 -45.7660931 -5.874822779 135.1150663 -6.469828251 -1.408803042
+## V1    45.766093   1.6538239  0.274766592  -1.6628629 -0.145537538 -0.650708148
+## V2    -5.874823  -0.2747666  0.085293622  -0.6559719  0.073716182 -0.004651691
+## V3  -135.115066  -1.6628629  0.655971950   2.4781175  1.048519534  0.631950668
+## V4    -6.469828   0.1455375  0.073716182  -1.0485195  0.075591156  0.006836668
+## V5    -1.408803   0.6507081 -0.004651691  -0.6319507  0.006836668  0.014961788</code></pre>
+<p>Our regression coefficients are here in this new matrix.
+We just need to find them.
+We know that the dependent variables are V1 and V3, and that the independent variables are V2, V4, and V5.
+Let’s index the columns of <code>H</code> with the names of the dvs and the rows with the names of the ivs.</p>
+<pre class="r"><code>  # Extract the regression coefficients from H
+  H[c(&quot;int&quot;, ivs), dvs]</code></pre>
+<pre><code>##              V1          V3
+## int -45.7660931 135.1150663
+## V2   -0.2747666  -0.6559719
+## V4    0.1455375  -1.0485195
+## V5    0.6507081  -0.6319507</code></pre>
+<pre class="r"><code>  # Compare with coefficients from lm function
+  coef(mlm0)</code></pre>
+<pre><code>##                      V1          V3
+## (Intercept) -45.7660931 135.1150663
+## V2           -0.2747666  -0.6559719
+## V4            0.1455375  -1.0485195
+## V5            0.6507081  -0.6319507</code></pre>
+<p>Note that, ww are sweeping <span class="math inline">\(\Theta\)</span> only over the predictors, but we also get the estimate of the intercept.
+However, remember that <span class="math inline">\(\Theta\)</span> is the result of sweeping G over the first position, which is the position where the intercept estimate appears.
+You could obtain the same result by directly sweeping G over position 1, and the position of the predictors.
+In code:</p>
+<pre class="r"><code>  # Sweep G
   sweepGoodnight(G, c(1, sweep_over))[c(&quot;int&quot;, ivs), dvs]</code></pre>
 <pre><code>##              V1          V3
 ## int -45.7660931 135.1150663
@@ -332,6 +368,38 @@ Now, let’s obtain the result with the sweep operator.</p>
 ## V2   -0.2747666  -0.6559719
 ## V4    0.1455375  -1.0485195
 ## V5    0.6507081  -0.6319507</code></pre>
+<p>Finally, just play around with what variables you consider as dvs and ivs.
+You will discover the magic of the sweep operator.</p>
+<pre class="r"><code># Play around with variable roles ------------------------------------------
+
+  # Define different dependent variables (dvs) for the multivairate linear models
+  dvs &lt;- c(&quot;V1&quot;, &quot;V2&quot;, &quot;V5&quot;)
+
+  # Define different predictors (ivs) for the multivairate linear models
+  ivs &lt;- c(&quot;V3&quot;, &quot;V4&quot;)
+
+  # Create the formula (complicated but flexible way)
+  formula_lm &lt;- paste0(&quot;cbind(&quot;,
+                       paste0(dvs, collapse = &quot;, &quot;),
+                       &quot;) ~ &quot;,
+                       paste0(ivs, collapse = &quot; + &quot;))
+
+  # Fit the model with the MLM
+  mlm1 &lt;- lm(formula_lm, data = X)
+  coef(mlm1)</code></pre>
+<pre><code>##                      V1         V2          V5
+## (Intercept) 18.63186149 78.3607367 131.2824064
+## V3          -0.75087203 -0.2686979  -1.1998512
+## V4          -0.07777123 -0.9014841  -0.7246001</code></pre>
+<pre class="r"><code>  # Define positions to sweep over
+  sweep_over &lt;- which(colnames(Theta) %in% ivs)
+
+  # Sweep Theta over new positions
+  sweepGoodnight(Theta, K = sweep_over)[c(&quot;int&quot;, ivs), dvs]</code></pre>
+<pre><code>##              V1         V2          V5
+## int 18.63186149 78.3607367 131.2824064
+## V3  -0.75087203 -0.2686979  -1.1998512
+## V4  -0.07777123 -0.9014841  -0.7246001</code></pre>
 </div>
 </div>
 </div>
@@ -476,20 +544,56 @@ H_fm - H_sg
   # Check the formula
   formula_lm
 
-
   # Fit the model with the MLM
   mlm0 &lt;- lm(formula_lm, data = X)
   coef(mlm0)
 
+# Fit some multivariate linear models using sweep ------------------------------
 
   # Define positions to sweep over
   sweep_over &lt;- which(colnames(G) %in% ivs)
+
+  # Sweep theta
+  H &lt;- sweepGoodnight(Theta, K = sweep_over)
+
+  # Check out the result
+  H
+
+  # Extract the regression coefficients from H
+  H[c(&quot;int&quot;, ivs), dvs]
+
+  # Compare with coefficients from lm function
+  coef(mlm0)
 
   # Sweep G
   sweepGoodnight(G, c(1, sweep_over))[c(&quot;int&quot;, ivs), dvs]
 
   # Sweep theta (notice we do not sweep over 1)
-  sweepGoodnight(Theta, sweep_over)[c(&quot;int&quot;, ivs), dvs]</code></pre>
+  sweepGoodnight(Theta, sweep_over)[c(&quot;int&quot;, ivs), dvs]
+
+# Play around with variable roles ------------------------------------------
+
+  # Define different dependent variables (dvs) for the multivairate linear models
+  dvs &lt;- c(&quot;V1&quot;, &quot;V2&quot;, &quot;V5&quot;)
+
+  # Define different predictors (ivs) for the multivairate linear models
+  ivs &lt;- c(&quot;V3&quot;, &quot;V4&quot;)
+
+  # Create the formula (complicated but flexible way)
+  formula_lm &lt;- paste0(&quot;cbind(&quot;,
+                       paste0(dvs, collapse = &quot;, &quot;),
+                       &quot;) ~ &quot;,
+                       paste0(ivs, collapse = &quot; + &quot;))
+
+  # Fit the model with the MLM
+  mlm1 &lt;- lm(formula_lm, data = X)
+  coef(mlm1)
+
+  # Define positions to sweep over
+  sweep_over &lt;- which(colnames(Theta) %in% ivs)
+
+  # Sweep Theta over new positions
+  sweepGoodnight(Theta, K = sweep_over)[c(&quot;int&quot;, ivs), dvs]</code></pre>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1>References</h1>

@@ -58,6 +58,13 @@ Little and Rubin [-@littleRubin:2002 p148] defined it as follows:
 > $$
 
 The notation indicating this transformation is usually a variation of SWEEP(k)[G], which can be read as sweeping matrix G on row and column k.
+The notation SWEEP(1, 2, ..., K)[G] indicates successive applications of SWEEP(k)[G] with $k = 1, \dots, K$.
+Sweeps on multiple positions do not need be carried out in any particular order.
+The sweep operator is commutative.
+
+$$
+\text{SWEEP}(k_2)[\text{SWEEP}(k_1)[G]] = \text{SWEEP}(k_1)[\text{SWEEP}(k_2)[G]]
+$$
 
 In this post, I'm interested in exploring how we use the sweep operator to estimate the parameters of regressions models.
 If you are interested in the mathematical details, I recommend reading the full sweep operator description in one of the following resources: Goodnight [-@goodnight:1979 p154], Schafer [-@schafer:1997], Little and Rubin [-@littleRubin:2002 p148].
@@ -341,7 +348,7 @@ We will start by creating a formula for an `lm` function return the model we wan
 # Fit some multivariate linear models using sweep ------------------------------
 
   # Define positions to sweep over
-  sweep_over <- which(colnames(G) %in% ivs)
+  sweep_over <- which(colnames(Theta) %in% ivs)
 
 ```
 
@@ -370,8 +377,8 @@ Let's index the columns of `H` with the names of the dvs and the rows with the n
 
 ```
 
-Note that, ww are sweeping $\Theta$ only over the predictors, but we also get the estimate of the intercept.
-However, remember that $\Theta$ is the result of sweeping G over the first position, which is the position where the intercept estimate appears.
+Note that, we are sweeping $\Theta$ only over the predictors, but we also get the estimate of the intercept.
+Remember that $\Theta$ is the result of sweeping G over the first position, which is the position where the intercept estimate appears.
 You could obtain the same result by directly sweeping G over position 1, and the position of the predictors.
 In code:
 
@@ -383,6 +390,13 @@ In code:
   sweepGoodnight(Theta, sweep_over)[c("int", ivs), dvs]
 
 ```
+
+Therefore, you can think of finding the coefficients of a multivariate linear model using the sweep operator as:
+
+- SWEEP($k_1, \dots, k_K$)[SWEEP(1)[G]] or as,
+- SWEEP($k_1, \dots, k_K$)[$\Theta$]
+
+with $k_1, \dots, k_K$ being the positions of the $K$ predictors in matrix $G$.
 
 Finally, just play around with what variables you consider as dvs and ivs.
 You will discover the magic of the sweep operator.

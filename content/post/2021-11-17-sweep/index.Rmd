@@ -3,7 +3,7 @@ title: The sweep operator
 author: Edoardo Costantini
 date: '2021-11-17'
 slug: sweep
-categories: ["Tutorials"]
+categories: ["Tutorials", "Drafts"]
 tags: ["statistics", "regression"]
 subtitle: ''
 summary: ''

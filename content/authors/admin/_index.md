@@ -33,7 +33,7 @@ education:
     year: 2019
   - course: BSc in Sociology
     institution: Trento University, Italy
-    year: 202017
+    year: 2017
 
 # Social/Academic Networking
 # For available icons, see: https://wowchemy.com/docs/getting-started/page-builder/#icons

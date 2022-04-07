@@ -18,8 +18,11 @@ cp -r ~/projects/blogdown/public/. ~/projects/edoardocostantini.github.io/
 # Move to git folder for website location
 cd ~/projects/edoardocostantini.github.io/
 
+# Stage all changes
+git add -A
+
 # Commit changes
-git commit -am "automatic website update"
+git commit -m "automatic website update"
 
 # Push changes to GitHub
 git push

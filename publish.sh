@@ -5,6 +5,10 @@
 # Created:  2022-04-07
 # Modified: 2022-04-07
 
+# Clean current website
+rm -r ~/projects/blogdown/public/*
+rm -r ~/projects/edoardocostantini.github.io/*
+
 # Build website
 R -e 'blogdown::build_site()'
 

@@ -1,4 +1,29 @@
-<script src="index_files/header-attrs-2.11/header-attrs.js"></script>
+---
+title: The sweep operator
+author: Edoardo Costantini
+date: '2021-11-17'
+slug: sweep
+categories: ["Tutorials", "Drafts"]
+tags: ["statistics", "regression"]
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2022-04-02T15:33:01+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+bibliography: references.bib
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
 
 <div id="TOC">
 <ul>
@@ -95,9 +120,9 @@ sweepGoodnight &lt;- function (G, K){
 # install.packages(&quot;fastmatrix&quot;)
 
 # Load fastmatrix
-library(fastmatrix)
-
-# Define an example dataset
+library(fastmatrix)</code></pre>
+<pre><code>## Warning: package &#39;fastmatrix&#39; was built under R version 4.1.2</code></pre>
+<pre class="r"><code># Define an example dataset
 X &lt;- matrix(c(1, 1, 1, 1,
               1, 2, 1, 3,
               1, 3, 1, 3,
@@ -391,20 +416,7 @@ You will discover the magic of the sweep operator.</p>
 </div>
 <div id="tldr-just-give-me-the-code" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> TL;DR, just give me the code!</h1>
-<pre class="r"><code># Packages and functions
-source(&quot;sweepGoodnight.R&quot;) # main sweep function
-library(ISR3)                  # for SWP functions
-library(fastmatrix)            # alternative sweep
-
-# Take the mtcars data
-y &lt;- mtcars[, &quot;mpg&quot;]
-X &lt;- mtcars[, -1]
-
-# Create a few shorthands we will use
-n &lt;- nrow(X)
-p &lt;- ncol(X)
-
-# Write an R function implementing SWEEP(k)[G] according to Goodnight ----------
+<pre class="r"><code># Write an R function implementing SWEEP(k)[G] according to Goodnight ----------
 
 sweepGoodnight &lt;- function (G, K){
 

@@ -23,23 +23,6 @@ output:
     number_sections: true
 ---
 
-```{r set up, echo = FALSE, results = 'hide', message = FALSE, warning = FALSE}
-
-# Packages and functions
-source("sweepGoodnight.R") # main sweep function
-library(ISR3)                  # for SWP functions
-library(fastmatrix)            # alternative sweep
-
-# Take the mtcars data
-y <- mtcars[, "mpg"]
-X <- mtcars[, -1]
-
-# Create a few shorthands we will use
-n <- nrow(X)
-p <- ncol(X)
-
-```
-
 # Introduction
 
 The sweep operator is a matrix transformation commonly used to estimate regression models.

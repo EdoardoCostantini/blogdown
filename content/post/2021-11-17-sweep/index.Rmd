@@ -211,12 +211,20 @@ with $\mu_1, \dots, \mu_p$, $\sigma^2_1, \dots, \sigma^2_p$, and $\sigma_{jk}$ b
 
 In R, we can obtain this matrix in just a few steps starting from our dataset `X`:
 
-- **Augment the original data** with a column of 1s on the left
+- **Augment the original data** with a column of 1s on the left.
+
+  In R, we can use the `cbind()` function to append a column of 1s to the left of X.
+  Keep in mind that we need to perform matrix operations with the resulting object.
+  Therefore, we need to make sure we are working with an R object of the class `matrix` instead of `data.frame`.
+
   ```{r augment X}
   # Obtain the augmented covariance matrix ---------------------------------------
 
   # Augment X
-    X_aug <- cbind(int = 1, as.matrix(X))
+    X_aug <- cbind(int = 1, X)
+
+  # Transform data.frame to matrix
+    X_aug <- as.matrix(X_aug)
 
   # Glance at the first 6 rows of X_aug
     head(X_aug)
@@ -272,7 +280,7 @@ In R, we can obtain this matrix in just a few steps starting from our dataset `X
   $$
   \Theta =
   \begin{bmatrix}
-  -1 & \mu_1 & ... &\mu_p\\
+  1 & \mu_1 & ... &\mu_p\\
   \mu_1 & \sigma^2_1 & ... & \sigma_{1p}\\
   ... & ... & ... & ...\\
   \mu_p & \sigma_{1p} & ... & \sigma^2_{p}
@@ -297,7 +305,6 @@ In R, we can obtain this matrix in just a few steps starting from our dataset `X
 
   Pay attention to a few of things:
   - The covariance matrix store in $\Theta$ is the Maximum Likelihood version (denominator should be `n` instead of the default `n-1`)
-  - The first element of the `Theta` object is negative, which indicates the matrix has been swept over that row and column.
   - We could have constructed the object `Theta` just by using `colMeans(X)` and `cov(X) * (n-1) / n` directly.
     However, it is important to note the relationship between `Tmat`, `G`, and `Theta`.
     In particular, pay attention to the fact that `Theta` is the result of sweeping `G` in the first position.
@@ -308,7 +315,7 @@ In R, we can obtain this matrix in just a few steps starting from our dataset `X
 
 Now let's see how we can use $\Theta$ to estimate any multivariate linear model involving the variables in our dataset.
 First, let's see how we would obtain these linear models in R with standard procedures.
-Say we want to regress V1 and V3 on V2, V4, and V5.
+Say we want to regress V1 and V3 on V2, V4, and V5 from the `X` dataset.
 We will start by creating a formula for an `lm` function return the model we want.
 
 ```{r mlm definition}
@@ -321,27 +328,27 @@ We will start by creating a formula for an `lm` function return the model we wan
   ivs <- c("V2", "V4", "V5")
 
   # Create the formula (complicated but flexible way)
-  formula_lm <- paste0("cbind(",
+  formula_mlm <- paste0("cbind(",
                        paste0(dvs, collapse = ", "),
                        ") ~ ",
                        paste0(ivs, collapse = " + "))
 
   # Check the formula
-  formula_lm
+  formula_mlm
 
 ```
 
-  Next,
+  Next, fit the multivariate linear model with the `lm()` R function:
 
 ```{r mlm estimation}
-  # Fit the model with the MLM
-  mlm0 <- lm(formula_lm, data = X)
+  # Fit the model with the lm function
+  mlm0 <- lm(formula_mlm, data = X)
   coef(mlm0)
 
 ```
 
   These are our intercepts, and regression coefficients for the multivariate linear model.
-  Given a $\Theta$ matrix, we can sweep on the positions of the independent variables to obtain the regression coefficients of all the multivariate linear model with the variables we did not sweep over as dependent variables.
+  Given a $\Theta$ matrix, we can sweep on the positions of the independent variables and obtain the regression coefficients of the multivariate linear model with the variables we did not sweep over as dependent variables.
   First, let's define a vector of positions to sweep over based on the variable names we stored in `ivs`.
 
 ```{r define sweep over}
@@ -366,7 +373,7 @@ Then, let's simply sweep our $\Theta$ over these positions.
 Our regression coefficients are here in this new matrix.
 We just need to find them.
 We know that the dependent variables are V1 and V3, and that the independent variables are V2, V4, and V5.
-Let's index the columns of `H` with the names of the dvs and the rows with the names of the ivs.
+Let's index the rows of `H` with the names of the ivs (and the name of the intercept row) and the columns with the names of the dvs.
 
 ```{r index H}
   # Extract the regression coefficients from H
@@ -386,13 +393,11 @@ In code:
   # Sweep G
   sweepGoodnight(G, c(1, sweep_over))[c("int", ivs), dvs]
 
-  # Sweep theta (notice we do not sweep over 1)
-  sweepGoodnight(Theta, sweep_over)[c("int", ivs), dvs]
-
 ```
 
 Therefore, you can think of finding the coefficients of a multivariate linear model using the sweep operator as:
 
+- SWEEP(1, $k_1, \dots, k_K$)[G] or as,
 - SWEEP($k_1, \dots, k_K$)[SWEEP(1)[G]] or as,
 - SWEEP($k_1, \dots, k_K$)[$\Theta$]
 
@@ -411,13 +416,13 @@ You will discover the magic of the sweep operator.
   ivs <- c("V3", "V4")
 
   # Create the formula (complicated but flexible way)
-  formula_lm <- paste0("cbind(",
+  formula_mlm <- paste0("cbind(",
                        paste0(dvs, collapse = ", "),
                        ") ~ ",
                        paste0(ivs, collapse = " + "))
 
   # Fit the model with the MLM
-  mlm1 <- lm(formula_lm, data = X)
+  mlm1 <- lm(formula_mlm, data = X)
   coef(mlm1)
 
   # Define positions to sweep over

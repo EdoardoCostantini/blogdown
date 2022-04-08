@@ -1,29 +1,4 @@
----
-title: The sweep operator
-author: Edoardo Costantini
-date: '2021-11-17'
-slug: sweep
-categories: ["Tutorials", "Drafts"]
-tags: ["statistics", "regression"]
-subtitle: ''
-summary: ''
-authors: []
-lastmod: '2022-04-02T15:33:01+02:00'
-featured: no
-image:
-  caption: ''
-  focal_point: ''
-  preview_only: no
-projects: []
-bibliography: references.bib
-output:
-  blogdown::html_page:
-    toc: true
-    toc_depth: 4
-    number_sections: true
----
-
-<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+<script src="index_files/header-attrs-2.11/header-attrs.js"></script>
 
 <div id="TOC">
 <ul>
@@ -195,11 +170,17 @@ It usually looks like this:</p>
 <p>with <span class="math inline">\(\mu_1, \dots, \mu_p\)</span>, <span class="math inline">\(\sigma^2_1, \dots, \sigma^2_p\)</span>, and <span class="math inline">\(\sigma_{jk}\)</span> being the means, variances and covariances of the variables in our dataset, respectively.</p>
 <p>In R, we can obtain this matrix in just a few steps starting from our dataset <code>X</code>:</p>
 <ul>
-<li><p><strong>Augment the original data</strong> with a column of 1s on the left</p>
+<li><p><strong>Augment the original data</strong> with a column of 1s on the left.</p>
+<p>In R, we can use the <code>cbind()</code> function to append a column of 1s to the left of X.
+Keep in mind that we need to perform matrix operations with the resulting object.
+Therefore, we need to make sure we are working with an R object of the class <code>matrix</code> instead of <code>data.frame</code>.</p>
 <pre class="r"><code># Obtain the augmented covariance matrix ---------------------------------------
 
 # Augment X
-  X_aug &lt;- cbind(int = 1, as.matrix(X))
+  X_aug &lt;- cbind(int = 1, X)
+
+# Transform data.frame to matrix
+  X_aug &lt;- as.matrix(X_aug)
 
 # Glance at the first 6 rows of X_aug
   head(X_aug)</code></pre>
@@ -243,7 +224,7 @@ G =
 <p><span class="math display">\[
 \Theta =
 \begin{bmatrix}
--1 &amp; \mu_1 &amp; ... &amp;\mu_p\\
+1 &amp; \mu_1 &amp; ... &amp;\mu_p\\
 \mu_1 &amp; \sigma^2_1 &amp; ... &amp; \sigma_{1p}\\
 ... &amp; ... &amp; ... &amp; ...\\
 \mu_p &amp; \sigma_{1p} &amp; ... &amp; \sigma^2_{p}
@@ -277,7 +258,6 @@ G =
 <p>Pay attention to a few of things:</p>
 <ul>
 <li>The covariance matrix store in <span class="math inline">\(\Theta\)</span> is the Maximum Likelihood version (denominator should be <code>n</code> instead of the default <code>n-1</code>)</li>
-<li>The first element of the <code>Theta</code> object is negative, which indicates the matrix has been swept over that row and column.</li>
 <li>We could have constructed the object <code>Theta</code> just by using <code>colMeans(X)</code> and <code>cov(X) * (n-1) / n</code> directly.
 However, it is important to note the relationship between <code>Tmat</code>, <code>G</code>, and <code>Theta</code>.
 In particular, pay attention to the fact that <code>Theta</code> is the result of sweeping <code>G</code> in the first position.
@@ -290,7 +270,7 @@ I will get back to this point in a sec.</li>
 <h3><span class="header-section-number">2.2.2</span> Estimate multivariate linear models</h3>
 <p>Now let’s see how we can use <span class="math inline">\(\Theta\)</span> to estimate any multivariate linear model involving the variables in our dataset.
 First, let’s see how we would obtain these linear models in R with standard procedures.
-Say we want to regress V1 and V3 on V2, V4, and V5.
+Say we want to regress V1 and V3 on V2, V4, and V5 from the <code>X</code> dataset.
 We will start by creating a formula for an <code>lm</code> function return the model we want.</p>
 <pre class="r"><code># Fit some multivariate linear models ------------------------------------------
 
@@ -301,17 +281,17 @@ We will start by creating a formula for an <code>lm</code> function return the m
   ivs &lt;- c(&quot;V2&quot;, &quot;V4&quot;, &quot;V5&quot;)
 
   # Create the formula (complicated but flexible way)
-  formula_lm &lt;- paste0(&quot;cbind(&quot;,
+  formula_mlm &lt;- paste0(&quot;cbind(&quot;,
                        paste0(dvs, collapse = &quot;, &quot;),
                        &quot;) ~ &quot;,
                        paste0(ivs, collapse = &quot; + &quot;))
 
   # Check the formula
-  formula_lm</code></pre>
+  formula_mlm</code></pre>
 <pre><code>## [1] &quot;cbind(V1, V3) ~ V2 + V4 + V5&quot;</code></pre>
-<p>Next,</p>
-<pre class="r"><code>  # Fit the model with the MLM
-  mlm0 &lt;- lm(formula_lm, data = X)
+<p>Next, fit the multivariate linear model with the <code>lm()</code> R function:</p>
+<pre class="r"><code>  # Fit the model with the lm function
+  mlm0 &lt;- lm(formula_mlm, data = X)
   coef(mlm0)</code></pre>
 <pre><code>##                      V1          V3
 ## (Intercept) -45.7660931 135.1150663
@@ -319,7 +299,7 @@ We will start by creating a formula for an <code>lm</code> function return the m
 ## V4            0.1455375  -1.0485195
 ## V5            0.6507081  -0.6319507</code></pre>
 <p>These are our intercepts, and regression coefficients for the multivariate linear model.
-Given a <span class="math inline">\(\Theta\)</span> matrix, we can sweep on the positions of the independent variables to obtain the regression coefficients of all the multivariate linear model with the variables we did not sweep over as dependent variables.
+Given a <span class="math inline">\(\Theta\)</span> matrix, we can sweep on the positions of the independent variables and obtain the regression coefficients of the multivariate linear model with the variables we did not sweep over as dependent variables.
 First, let’s define a vector of positions to sweep over based on the variable names we stored in <code>ivs</code>.</p>
 <pre class="r"><code># Fit some multivariate linear models using sweep ------------------------------
 
@@ -341,7 +321,7 @@ First, let’s define a vector of positions to sweep over based on the variable 
 <p>Our regression coefficients are here in this new matrix.
 We just need to find them.
 We know that the dependent variables are V1 and V3, and that the independent variables are V2, V4, and V5.
-Let’s index the columns of <code>H</code> with the names of the dvs and the rows with the names of the ivs.</p>
+Let’s index the rows of <code>H</code> with the names of the ivs (and the name of the intercept row) and the columns with the names of the dvs.</p>
 <pre class="r"><code>  # Extract the regression coefficients from H
   H[c(&quot;int&quot;, ivs), dvs]</code></pre>
 <pre><code>##              V1          V3
@@ -367,15 +347,9 @@ In code:</p>
 ## V2   -0.2747666  -0.6559719
 ## V4    0.1455375  -1.0485195
 ## V5    0.6507081  -0.6319507</code></pre>
-<pre class="r"><code>  # Sweep theta (notice we do not sweep over 1)
-  sweepGoodnight(Theta, sweep_over)[c(&quot;int&quot;, ivs), dvs]</code></pre>
-<pre><code>##              V1          V3
-## int -45.7660931 135.1150663
-## V2   -0.2747666  -0.6559719
-## V4    0.1455375  -1.0485195
-## V5    0.6507081  -0.6319507</code></pre>
 <p>Therefore, you can think of finding the coefficients of a multivariate linear model using the sweep operator as:</p>
 <ul>
+<li>SWEEP(1, <span class="math inline">\(k_1, \dots, k_K\)</span>)[G] or as,</li>
 <li>SWEEP(<span class="math inline">\(k_1, \dots, k_K\)</span>)[SWEEP(1)[G]] or as,</li>
 <li>SWEEP(<span class="math inline">\(k_1, \dots, k_K\)</span>)[<span class="math inline">\(\Theta\)</span>]</li>
 </ul>
@@ -391,13 +365,13 @@ You will discover the magic of the sweep operator.</p>
   ivs &lt;- c(&quot;V3&quot;, &quot;V4&quot;)
 
   # Create the formula (complicated but flexible way)
-  formula_lm &lt;- paste0(&quot;cbind(&quot;,
+  formula_mlm &lt;- paste0(&quot;cbind(&quot;,
                        paste0(dvs, collapse = &quot;, &quot;),
                        &quot;) ~ &quot;,
                        paste0(ivs, collapse = &quot; + &quot;))
 
   # Fit the model with the MLM
-  mlm1 &lt;- lm(formula_lm, data = X)
+  mlm1 &lt;- lm(formula_mlm, data = X)
   coef(mlm1)</code></pre>
 <pre><code>##                      V1         V2          V5
 ## (Intercept) 18.63186149 78.3607367 131.2824064
@@ -516,7 +490,10 @@ H_fm - H_sg
 # Obtain the augmented covariance matrix ---------------------------------------
 
 # Augment X
-  X_aug &lt;- cbind(int = 1, as.matrix(X))
+  X_aug &lt;- cbind(int = 1, X)
+
+# Transform data.frame to matrix
+  X_aug &lt;- as.matrix(X_aug)
 
 # Glance at the first 6 rows of X_aug
   head(X_aug)
@@ -548,16 +525,16 @@ H_fm - H_sg
   ivs &lt;- c(&quot;V2&quot;, &quot;V4&quot;, &quot;V5&quot;)
 
   # Create the formula (complicated but flexible way)
-  formula_lm &lt;- paste0(&quot;cbind(&quot;,
+  formula_mlm &lt;- paste0(&quot;cbind(&quot;,
                        paste0(dvs, collapse = &quot;, &quot;),
                        &quot;) ~ &quot;,
                        paste0(ivs, collapse = &quot; + &quot;))
 
   # Check the formula
-  formula_lm
+  formula_mlm
 
-  # Fit the model with the MLM
-  mlm0 &lt;- lm(formula_lm, data = X)
+  # Fit the model with the lm function
+  mlm0 &lt;- lm(formula_mlm, data = X)
   coef(mlm0)
 
 # Fit some multivariate linear models using sweep ------------------------------
@@ -580,9 +557,6 @@ H_fm - H_sg
   # Sweep G
   sweepGoodnight(G, c(1, sweep_over))[c(&quot;int&quot;, ivs), dvs]
 
-  # Sweep theta (notice we do not sweep over 1)
-  sweepGoodnight(Theta, sweep_over)[c(&quot;int&quot;, ivs), dvs]
-
 # Play around with variable roles ------------------------------------------
 
   # Define different dependent variables (dvs) for the multivairate linear models
@@ -592,13 +566,13 @@ H_fm - H_sg
   ivs &lt;- c(&quot;V3&quot;, &quot;V4&quot;)
 
   # Create the formula (complicated but flexible way)
-  formula_lm &lt;- paste0(&quot;cbind(&quot;,
+  formula_mlm &lt;- paste0(&quot;cbind(&quot;,
                        paste0(dvs, collapse = &quot;, &quot;),
                        &quot;) ~ &quot;,
                        paste0(ivs, collapse = &quot; + &quot;))
 
   # Fit the model with the MLM
-  mlm1 &lt;- lm(formula_lm, data = X)
+  mlm1 &lt;- lm(formula_mlm, data = X)
   coef(mlm1)
 
   # Define positions to sweep over

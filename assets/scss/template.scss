@@ -18,3 +18,23 @@
   max-width: 500px;
   max-height: 500px;
 }
+
+// Space around custom section in homepage
+.home-section {
+  padding: 1rem 0 1rem 0;
+}
+
+// Space around avatar
+.home-section.wg-about-avatar {
+  padding: 0 0 0 0;
+}
+
+// Reduce distance between contact icons and rest of text
+#profile .network-icon {
+  margin-top: 0.5rem;
+}
+
+// Reduce contact icon size
+ul.network-icon .big-icon {
+  font-size: 1.5rem;
+}

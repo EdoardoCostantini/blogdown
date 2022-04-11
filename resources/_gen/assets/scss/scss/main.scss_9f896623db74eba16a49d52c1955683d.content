@@ -9568,3 +9568,15 @@ div.chart {
   height: auto;
   max-width: 500px;
   max-height: 500px; }
+
+.home-section {
+  padding: 1rem 0 1rem 0; }
+
+.home-section.wg-about-avatar {
+  padding: 0 0 0 0; }
+
+#profile .network-icon {
+  margin-top: 0.5rem; }
+
+ul.network-icon .big-icon {
+  font-size: 1.5rem; }

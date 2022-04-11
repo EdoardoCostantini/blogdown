@@ -9556,3 +9556,15 @@ div.chart {
 
 .portrait-title h2 {
   font-size: 1.5rem; }
+
+.avatar {
+  width: auto;
+  height: auto;
+  max-width: 225px;
+  max-height: 225px; }
+
+.wg-about .avatar {
+  width: auto;
+  height: auto;
+  max-width: 500px;
+  max-height: 500px; }

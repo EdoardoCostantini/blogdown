@@ -2,3 +2,19 @@
 .portrait-title h2 {
   font-size: 1.5rem;
 }
+
+// Custom avatar size on homepage
+.avatar {
+  width: auto;
+  height: auto;
+  max-width: 225px;
+  max-height: 225px;
+}
+
+// Prevent stretching on About page with narrow container
+.wg-about .avatar {
+  width: auto;
+  height: auto;
+  max-width: 500px;
+  max-height: 500px;
+}

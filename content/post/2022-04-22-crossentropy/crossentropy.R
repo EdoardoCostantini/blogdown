@@ -57,6 +57,6 @@ for (i in 1:nrow(p)){
 
 ce <- - sum(
   diag(
-    p %*% t(log(p_hat))
+    p %*% t(log(phat))
   )
 )

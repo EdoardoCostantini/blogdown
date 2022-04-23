@@ -79,6 +79,7 @@ highlight_languages:
   - r
   - python
   - latex
+highlight_style: "solarized-light"
 math: true
 diagram: false
 privacy_pack: false

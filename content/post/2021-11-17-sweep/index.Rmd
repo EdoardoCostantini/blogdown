@@ -7,7 +7,7 @@ categories: ["Tutorials"]
 tags: ["statistics", "regression"]
 subtitle: ''
 summary: ''
-authors: []
+authors: ["admin"]
 lastmod: '2022-04-02T15:33:01+02:00'
 featured: no
 image:

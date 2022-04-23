@@ -1,0 +1,46 @@
+---
+title: Cross-entropy as a measure of predictive accuracy
+draft: true # true
+author: Edoardo Costantini
+date: '2022-04-22'
+slug: cross-entropy
+categories: ["Tutorials", "Drafts"]
+tags: ["prediction", "machine learning"]
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2022-04-22T16:12:58+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+# Introduction
+
+Cross-entropy quantifies the difference between two probability distributions.
+As such, it comes in handy as a [loss function](https://en.wikipedia.org/wiki/Loss_function) in multi-class classification tasks (e.g., multinomial logistic regression).
+Cross-entropy provides an elegant solution for determining the difference between actual and predicted categorical data point values.
+
+# Learn by coding
+
+Bla bla
+
+# TL;DR, just give me the code!
+```{r TLDR, ref.label = knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+
+# References
+
+List of other resources:
+
+- [Cross-entropy in RPubs](https://rpubs.com/juanhklopper/cross_entropy)
+- [A Gentle Introduction to Cross-Entropy for Machine Learning](https://machinelearningmastery.com/cross-entropy-for-machine-learning/)
+- [Understanding Categorical Cross-Entropy Loss, Binary Cross-Entropy Loss, Softmax Loss, Logistic Loss, Focal Loss and all those confusing names](https://gombru.github.io/2018/05/23/cross_entropy_loss/)

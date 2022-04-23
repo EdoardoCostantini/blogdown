@@ -4,7 +4,7 @@ draft: false # true
 author: Edoardo Costantini
 date: '2022-03-14'
 slug: covmatwt
-categories: ["Tutorials", "Drafts"]
+categories: ["Drafts", "Tutorials"]
 tags: ["statistics", "weights", "covariance"]
 subtitle: ''
 summary: ''

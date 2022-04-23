@@ -1,0 +1,21 @@
+---
+title: Uncongeniality in imputation
+author: Edoardo Costantini
+date: '2022-04-08'
+slug: uncongenial
+categories: []
+tags: []
+subtitle: ''
+summary: ''
+authors: []
+lastmod: '2022-04-08T11:15:46+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+draft: true
+---
+
+I want describe the (un)congenial problems.

@@ -10,7 +10,7 @@ role: PhD Researcher
 
 # Organizations/Affiliations to show in About widget
 organizations:
-- name: Tilburg University, Department Methodology and Statistics
+- name: Tilburg University, Dept Methodology and Statistics
   url: https://www.tilburguniversity.edu/about/schools/socialsciences/organization/departments/methodology-statistics
 
 # Short bio (displayed in user profile at end of posts)

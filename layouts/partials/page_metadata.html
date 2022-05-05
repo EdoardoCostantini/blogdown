@@ -13,17 +13,27 @@
   {{ end }}
   {{ end }}
 
-  {{ if not (in (slice "event" "page") $page.Type) | and (ne $page.Params.show_date false) }}
+{{ if not (in (slice "event" "page") $page.Type) | and (ne $page.Params.show_date false) }}
+
   <span class="article-date">
-    {{ $date := $page.Lastmod | time.Format site.Params.date_format }}
+    {{ $Odate := $page.Date.Format site.Params.date_format }}
     {{ if eq $page.Type "publication" }}
-      {{ $date = $page.Date | time.Format (site.Params.publications.date_format | default "January, 2006") }}
+      {{ $Odate = $page.Date.Format (site.Params.publications.date_format | default "January, 2006") }}
+    {{ end }}
+  Published on {{ $Odate }}
+  </span>
+
+  <span class="article-date">
+    {{ $date := $page.Lastmod.Format site.Params.date_format }}
+    {{ if eq $page.Type "publication" }}
+      {{ $date = $page.Date.Format (site.Params.publications.date_format | default "January, 2006") }}
     {{ else }}
       {{ if ne $page.Params.Lastmod $page.Params.Date }}
-          {{ i18n "last_updated" }}
+      <span class="middot-divider"></span>
+         {{ i18n "last_updated" }}
+         {{ $date }}
       {{ end }}
     {{ end }}
-    {{ $date }}
   </span>
   {{ end }}
 

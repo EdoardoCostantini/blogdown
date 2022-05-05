@@ -94,7 +94,7 @@ edit_page:
 show_related:
   book: true
   page: false
-  post: true
+  post: false
   project: true
   publication: true
   event: true

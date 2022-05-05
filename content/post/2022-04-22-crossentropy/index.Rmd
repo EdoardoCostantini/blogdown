@@ -1,6 +1,6 @@
 ---
 title: Cross-entropy as a measure of predictive accuracy
-draft: false # true
+draft: true
 author: Edoardo Costantini
 date: '2022-04-22'
 slug: cross-entropy

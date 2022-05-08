@@ -4,12 +4,12 @@
 #   The weight parameter defines the order that the links will appear in.
 
 main:
-  - name: "Posts"  # A link title for your page.
+#  - name: About me
+#    url: "about/#about"
+#    weight: 10
+  - name: Digital garden  # A link title for your page.
     url: "post/"  # The URL of your page.
     weight: 10  # The position of your page in the menu.
-  - name: About me
-    url: "about/#about"
-    weight: 20
 #  - name: Recent Posts
 #    url: '#posts'
 #    weight: 20

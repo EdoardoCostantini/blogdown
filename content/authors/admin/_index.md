@@ -25,9 +25,9 @@ interests:
 # Education to show in About widget
 education:
   courses:
-  - course: PhD in Statistics
+  - course: Ph.D. in Statistics
     institution: Tilburg University, The Netherlands
-    year: 2023
+    year: (expected Sept. 2023)
   - course: Research Master in Social and Behavioral Sciences
     institution: Tilburg University, The Netherlands
     year: 2019

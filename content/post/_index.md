@@ -1,5 +1,5 @@
 ---
-title: Posts
+title: Digital garden
 cms_exclude: true
 
 # View.
@@ -13,3 +13,5 @@ header:
   caption: ""
   image: ""
 ---
+
+In between a blog and a notepad.

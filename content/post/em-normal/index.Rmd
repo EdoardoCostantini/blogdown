@@ -1,0 +1,40 @@
+---
+title: Using the EM algorithm
+author: Edoardo Costantini
+draft: true
+date: '2021-11-19'
+slug: sweep
+categories: ["The EM algorithm"]
+tags: ["statistics", "regression", "missing values"]
+subtitle: 'Series: The EM algorithm - Part 2'
+summary: 'In this post I show a simple implementation of the EM algorithm to estimate the means and covariance matrix of a data set with a general missing data pattern.'
+authors: ["admin"]
+lastmod: '2022-04-02T15:33:01+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+bibliography: references.bib
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+# Introduction
+
+The EM algorithm was described in -LINK TO OTHER POST-
+We will use the sweep operator described in -LINK TO OTHER POST-
+
+Little and Rubin [-@littleRubin:2002 p148] defined it as follows:
+
+# Learn by coding
+
+# TL;DR, just give me the code!
+```{r TLDR, ref.label = knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+
+# References

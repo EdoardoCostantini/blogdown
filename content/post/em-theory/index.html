@@ -1,0 +1,215 @@
+---
+title: The theory of the EM algorithm
+author: Edoardo Costantini
+draft: true
+date: '2021-11-15'
+slug: em-theory
+categories: ["The EM algorithm"]
+tags: ["statistics", "regression"]
+subtitle: 'Series: The EM algorithm - Part 0'
+summary: 'In this post I briefly discuss the idea behind the EM algorithm.'
+authors: ["admin"]
+lastmod: '2022-04-02T15:33:01+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+bibliography: references.bib
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a>
+<ul>
+<li><a href="#likelihood-review"><span class="toc-section-number">1.1</span> Likelihood review</a>
+<ul>
+<li><a href="#example"><span class="toc-section-number">1.1.1</span> Example</a></li>
+</ul></li>
+<li><a href="#incomplete-data"><span class="toc-section-number">1.2</span> Incomplete data</a></li>
+</ul></li>
+<li><a href="#the-em-algorithm"><span class="toc-section-number">2</span> The EM algorithm</a>
+<ul>
+<li><a href="#em-for-regular-exponential-families"><span class="toc-section-number">2.1</span> EM for regular exponential families</a></li>
+</ul></li>
+<li><a href="#other-notes"><span class="toc-section-number">3</span> Other notes</a></li>
+<li><a href="#tldr-just-give-me-the-code"><span class="toc-section-number">4</span> TL;DR, just give me the code!</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
+<p>The Expectation Maximization (EM) algorithm is one possible way to implement the full information maximum likelihood missing data technique <span class="citation">(<a href="#ref-enders:2010" role="doc-biblioref">Enders 2010, p86</a>)</span>.
+It is an iterative optimization procedure that allows to estimate the parameters an analysis model in the presence of missing values without requiring the computation of first and second derivatives, which makes it possible to obtain Maximum Likelihood estimates of the parameters of interest even when they cannot be obtained in closed form.</p>
+<div id="likelihood-review" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> Likelihood review</h2>
+<p>Following <span class="citation">(<a href="#ref-schafer:1997" role="doc-biblioref">Schafer 1997</a> ch 2.3.2)</span>, consider an <span class="math inline">\(n \times p\)</span> data matrix <span class="math inline">\(Y\)</span>, with some columns having missing values.
+The <strong>complete data probability density function</strong> of <span class="math inline">\(Y\)</span> is the function of <span class="math inline">\(Y\)</span> for fixed <span class="math inline">\(\theta\)</span> that can be written as:</p>
+<p><span class="math display" id="eq:pdfy">\[
+f(Y|\theta) = \prod_{i = 1}^{n} f(y_i|\theta) \tag{1.1}
+\]</span></p>
+<p>where</p>
+<ul>
+<li><span class="math inline">\(f\)</span> is a probability density function (pdf);</li>
+<li><span class="math inline">\(\theta\)</span> is a vector of unknown parameters defining the <span class="math inline">\(f\)</span> distribution;</li>
+<li><span class="math inline">\(f(y_i|\theta)\)</span> is the density value for a single <span class="math inline">\(i\)</span>-th row of the data matrix <span class="math inline">\(Y\)</span>.</li>
+</ul>
+<p>The <strong>complete-data likelihood function</strong> <span class="math inline">\(L(\theta|Y)\)</span> is any function of <span class="math inline">\(\theta\)</span> for fixed <span class="math inline">\(Y\)</span> that is proportional to <span class="math inline">\(f(Y|\theta)\)</span>:</p>
+<p><span class="math display">\[
+L(\theta|Y) \propto f(Y|\theta)
+\]</span></p>
+<p>and the complete-data <em>log</em>likelihood function <span class="math inline">\(l(\theta|Y)\)</span> is simply the natural logarithm of <span class="math inline">\(L(\theta|Y)\)</span></p>
+<p><span class="math display">\[
+l(\theta|Y) = log(L(\theta|Y))
+\]</span></p>
+<p>The <strong>maximum likelihood estimate</strong> of <span class="math inline">\(\theta\)</span> is the value of <span class="math inline">\(\theta\)</span> that leads to the highest value of of the log-likelihood function, for a fixed <span class="math inline">\(Y\)</span>.
+This estimate can be found by setting the first derivative of the log-likelihood function equal to 0, and solving for <span class="math inline">\(\theta\)</span>:</p>
+<p><span class="math display" id="eq:le">\[
+\frac{\partial l(\theta|Y)}{\partial \theta} = 0 \tag{1.2}
+\]</span></p>
+<p><a href="#eq:le">(1.2)</a> is called the <strong>likelihood equation</strong> or <strong>score function</strong>.
+If there are <span class="math inline">\(d\)</span> components to <span class="math inline">\(\theta\)</span>, then the likelihood equation is a set of <span class="math inline">\(d\)</span> simultaneous equations defined by differentiating <span class="math inline">\(l(\theta|Y)\)</span> with respect to each component.</p>
+<div id="example" class="section level3" number="1.1.1">
+<h3><span class="header-section-number">1.1.1</span> Example</h3>
+<p>If we assume that <span class="math inline">\(Y\)</span> comes from a multivariate normal distribution with parameters <span class="math inline">\(\theta = (\mu, \Sigma)\)</span>:</p>
+<ul>
+<li><p>its complete data density is:</p>
+<span class="math display">\[\begin{aligned}
+f(Y|\mu, \Sigma) &amp;= \prod^{n}_{i = 1} |(2 \pi)^{p} \Sigma|^{-\frac{1}{2}} \text{exp}\left(-\frac{1}{2}(y_i - \mu)^T \Sigma^{-1} (y_i - \mu) \right) \\
+&amp;= (2 \pi)^{-np/2} |\Sigma|^{-\frac{n}{2}} \text{exp}\left(-\frac{1}{2} \sum^{n}_{i=1}(y_i - \mu)^T \Sigma^{-1} (y_i - \mu) \right)
+\end{aligned}\]</span></li>
+<li><p>the complete data likelihood is:</p>
+<span class="math display">\[\begin{aligned}
+L(\mu, \Sigma | Y) &amp;\propto |\Sigma|^{-\frac{n}{2}} \text{exp}\left(-\frac{1}{2} \sum^{n}_{i=1}(y_i - \mu)^T \Sigma^{-1} (y_i - \mu) \right)
+\end{aligned}\]</span></li>
+<li><p>its log version is:</p>
+<span class="math display">\[\begin{aligned}
+l(\mu, \Sigma | Y) &amp;= log \left( |\Sigma|^{-\frac{n}{2}} \text{exp}\left(-\frac{1}{2} \sum^{n}_{i=1}(y_i - \mu)^T \Sigma^{-1} (y_i - \mu) \right) \right) \\
+&amp;= -\frac{n}{2}log(\Sigma) - \frac{1}{2} \sum^{n}_{i=1}(y_i - \mu)^T \Sigma^{-1} (y_i - \mu)
+\end{aligned}\]</span></li>
+<li><p>the likelihood equation is made of the following parts:</p>
+<span class="math display">\[\begin{aligned}
+\frac{\partial l(\theta|Y)}{\partial \mu} = 0 \\
+\frac{\partial l(\theta|Y)}{\partial \sigma_{ij}} = 0
+\end{aligned}\]</span>
+<p>for derivation of these you can check out <span class="citation">(<a href="#ref-rao:1973" role="doc-biblioref">Rao 1973</a> p 529)</span>, and you can use <a href="http://www.matrixcalculus.org">Matrix Calculus</a> to perform the computations yourself.</p></li>
+<li><p>the ML estiamtes of <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\Sigma\)</span> derived by solving the likelihood equation are:</p>
+<span class="math display">\[\begin{aligned}
+\hat{\mu} &amp;= \bar{y} \\
+\hat{\Sigma} &amp;= \frac{S}{n}
+\end{aligned}\]</span>
+<p>where <span class="math inline">\(\bar{y}\)</span> is the vector of sample means, and <span class="math inline">\(S\)</span> is the <span class="math inline">\(p \times p\)</span> cross-product matrix with the <span class="math inline">\((i, j)\)</span>th element <span class="math inline">\(s_{ij} = \sum^{n}_{i = 1}(y_{ij} - \bar{y}_{j})(y_{ij} - \bar{y}_{j})\)</span></p></li>
+</ul>
+</div>
+</div>
+<div id="incomplete-data" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> Incomplete data</h2>
+<p>In any incomplete-data problem, we can factor the distribution of the complete data <span class="math inline">\(Y\)</span> in <a href="#eq:pdfy">(1.1)</a> as:</p>
+<p><span class="math display" id="eq:idp">\[
+f(Y|\theta) = f(Y_{obs}|\theta) f(Y_{mis}|Y_{obs}, \theta) \tag{1.3}
+\]</span></p>
+<p>where <span class="math inline">\(f(Y_{obs}|\theta)\)</span> is the density of the observed data <span class="math inline">\(Y\)</span>; and <span class="math inline">\(f(Y_{mis}|Y_{obs}, \theta)\)</span> is the density of the missing data given the observed data.
+We can rewrite <a href="#eq:idp">(1.3)</a> as a function of <span class="math inline">\(\theta\)</span> and obtain the partitioning of the complete data likelihood function:</p>
+<p><span class="math display" id="eq:cdlp">\[
+L(\theta|Y) = L(\theta|Y_{obs}) f(Y_{mis}|Y_{obs}, \theta) c \tag{1.4}
+\]</span></p>
+<p>and to make <a href="#eq:cdlp">(1.4)</a> easier to work with, it is useful to take its <span class="math inline">\(log\)</span>:</p>
+<p><span class="math display" id="eq:lcdlp">\[
+l(\theta|Y) = l(\theta|Y_{obs}) + log f(Y_{mis}|Y_{obs}, \theta) + c \tag{1.5}
+\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(l(\theta|Y)\)</span> is the complete-data loglikelihood</li>
+<li><span class="math inline">\(l(\theta|Y_{obs})\)</span> is the observed-data loglikelihood</li>
+<li><span class="math inline">\(c\)</span> is an arbitrary proportionality constant</li>
+<li><span class="math inline">\(f(Y_{mis}|Y_{obs}, \theta)\)</span> is the predictive distribution of the missing data given <span class="math inline">\(\theta\)</span></li>
+</ul>
+<p>The task is to find the estimate of <span class="math inline">\(\theta\)</span> that maximizes the log likelihood <span class="math inline">\(l(\theta|Y_{obs})\)</span>.
+When this likelihood is differentiable the ML estimates of <span class="math inline">\(\theta\)</span> can be found by setting the its first derivative equal to 0 and solving for <span class="math inline">\(\theta\)</span>:</p>
+<p><span class="math display" id="eq:floglike">\[
+\frac{\partial l(\theta|Y_{obs})}{\partial \theta} = 0 \tag{1.6}
+\]</span></p>
+<p>However, it is not always easy (or possible) to find a closed form solution to <a href="#eq:floglike">(1.6)</a>.</p>
+</div>
+</div>
+<div id="the-em-algorithm" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> The EM algorithm</h1>
+<p>Since <span class="math inline">\(Y_{mis}\)</span> is unknown, we cannot calculate the terms of <a href="#eq:lcdlp">(1.5)</a> that include it, so instead we take its average over the predictive distribution <span class="math inline">\(f(Y_{mis}|Y_{obs}, \theta^{(t)})\)</span>, where <span class="math inline">\(\theta^{(t)}\)</span> is the current estimate of the unknown parameter.
+This means we multiply both sides of <a href="#eq:lcdlp">(1.5)</a> by <span class="math inline">\(f(Y_{mis}|Y_{obs}, \theta^{(t)})\)</span> and integrate over the unknown <span class="math inline">\(Y_{mis}\)</span> :</p>
+<span class="math display">\[\begin{aligned}
+\int &amp; l(\theta|Y) f\left(Y_{mis}|Y_{obs}, \theta^{(t)}\right) dY_{mis} = l(\theta|Y_{obs}) + \\
+ &amp; \int log f(Y_{mis}|Y_{obs}, \theta) f(Y_{mis}|Y_{obs}, \theta^{(t)}) dY_{mis} + c
+\end{aligned}\]</span>
+<p>which can be shortened to:</p>
+<p><span class="math display" id="eq:avglcdlp">\[
+Q\left(\theta|\theta^{(t)}\right) = l(\theta|Y_{obs}) + H(\theta|\theta^{(t)}) + c \tag{2.1}
+\]</span></p>
+<p>It can be shown that if we define <span class="math inline">\(\theta^{t+1}\)</span> as the value of <span class="math inline">\(\theta\)</span> that maximizes <span class="math inline">\(Q(\theta|\theta^{(t)})\)</span>, then <span class="math inline">\(\theta^{t+1}\)</span> is a better estimate than <span class="math inline">\(\theta^{t+1}\)</span> in the sense that its observed-data loglikelihood is at least as high as that of <span class="math inline">\(\theta^{t}\)</span>:</p>
+<p><span class="math display">\[
+l \left( \theta^{(t+1)}|Y_{obs} \right) \geq l \left( \theta^{(t)}|Y_{obs} \right)
+\]</span></p>
+<p>After defining a starting value <span class="math inline">\(\theta^{(0)}\)</span>, the EM algorithm consists of alternatively performing the following two steps:</p>
+<ol style="list-style-type: decimal">
+<li>E-step (or expectation step) which finds the expected complete-data loglikelihood if <span class="math inline">\(\theta\)</span> were <span class="math inline">\(\theta^{(t)}\)</span>:</li>
+</ol>
+<p><span class="math display">\[
+Q\left(\theta|\theta^{(t)}\right) = \int l(\theta|Y) f\left(Y_{mis}|Y_{obs}, \theta^{(t)}\right) dY_{mis}
+\]</span></p>
+<ol start="2" style="list-style-type: decimal">
+<li>M-step (or maximization step) consisting of maximizing <span class="math inline">\(Q\left(\theta|\theta^{(t)}\right)\)</span> to find <span class="math inline">\(Q^{t+1}\)</span></li>
+</ol>
+<div id="em-for-regular-exponential-families" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> EM for regular exponential families</h2>
+<p>Consider the case when the complete-data probability model belongs to the <a href="https://en.wikipedia.org/wiki/Exponential_family">exponential family</a> defined by:</p>
+<p><span class="math display">\[
+f(Y|\theta) = b(Y) \text{exp}\left(\frac{s(Y)\theta}{a(\theta)}\right)
+\]</span></p>
+<p>where
+- <span class="math inline">\(\theta\)</span> a parameter vector
+- <span class="math inline">\(s(Y)\)</span> denotes a vector of complete-data sufficient statistics
+- <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are functions of <span class="math inline">\(\theta\)</span> and <span class="math inline">\(Y\)</span>, respectively.</p>
+</div>
+</div>
+<div id="other-notes" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Other notes</h1>
+<p>We refer to the observed part of <span class="math inline">\(Y\)</span> as <span class="math inline">\(Y_{obs}\)</span> and to the missing part as <span class="math inline">\(Y_{mis}\)</span>.
+Under the missing at random assumption, the observed-data likelihood is proportional to the probability of <span class="math inline">\(Y_{obs}\)</span> given the unknown parameters <span class="math inline">\(\theta\)</span>:</p>
+<p><span class="math display" id="eq:odl">\[
+L(\theta|Y_{obs}) \propto f(Y_{obs}|\theta) \tag{3.1}
+\]</span></p>
+<p>If we assume that <span class="math inline">\(Y\)</span> comes from a <a href="https://en.wikipedia.org/wiki/Multivariate_normal_distribution">multivariate normal distribution</a> with parameter <span class="math inline">\(\theta = (\mu, \Sigma)\)</span> and an arbitrary number (<span class="math inline">\(S\)</span>) of missing data patterns, then, the observed-data likelihood can be written as:</p>
+<p><span class="math display">\[
+L(\theta|Y_{obs}) = \prod^{S}_{s = 1} \prod^{}_{i \in I(s)} |\Sigma_s^*|^{1/2} \text{exp}\left( - \frac{1}{2} (y_i^* - \mu_s^*)^T\Sigma_s^{*-1}(y_i^* - \mu_s^*) \right)
+\]</span></p>
+<p>where <span class="math inline">\(I(s)\)</span> is an indicator vector describing which rows are observed in the <span class="math inline">\(s\)</span>-th missing data pattern, <span class="math inline">\(y_i^*\)</span> represents the observed part of the <span class="math inline">\(i\)</span>-th row of <span class="math inline">\(Y\)</span>, and <span class="math inline">\(\mu_s^*\)</span> and <span class="math inline">\(\Sigma_s\)</span> are the mean vector and covariance matrices for the variables that are observed in pattern <span class="math inline">\(s\)</span>.
+Expect for special cases, it is not possible to express this likelihood as a product of complete-data likelihoods with distinct parameters, and computing its first derivative with respect to the individual parameters can be very complicated.</p>
+<p>The EM algorithm is a convenient alternative to maximize this likelihood (i.e., finding the ML estimates of <span class="math inline">\(\theta\)</span>).
+EM is based on the fact that <span class="math inline">\(Y_{mis}\)</span> contains information on <span class="math inline">\(\theta\)</span> and that <span class="math inline">\(\theta\)</span> can be used to find plausible values for <span class="math inline">\(Y_{mis}\)</span>.
+In fact, you can think of EM as iterating between filling in missing values based on a current estimate of <span class="math inline">\(\theta\)</span>, and re-estimating <span class="math inline">\(\theta\)</span> based on the filled-in missing values until convergence.</p>
+</div>
+<div id="tldr-just-give-me-the-code" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> TL;DR, just give me the code!</h1>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-enders:2010" class="csl-entry">
+Enders, Craig K. 2010. <em>Applied Missing Data Analysis</em>. Guilford press.
+</div>
+<div id="ref-rao:1973" class="csl-entry">
+Rao, Calyampudi Radhakrishna. 1973. <em>Linear Statistical Inference and Its Applications</em>. Vol. 2. Wiley New York.
+</div>
+<div id="ref-schafer:1997" class="csl-entry">
+Schafer, Joseph L. 1997. <em>Analysis of Incomplete Multivariate Data</em>. Vol. 72. Boca Raton, FL: Chapman &amp; Hall/<span>CRC</span>.
+</div>
+</div>
+</div>

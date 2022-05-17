@@ -16,14 +16,10 @@ image:
   focal_point: ''
   preview_only: no
 projects: []
-output:
-  blogdown::html_page:
-    toc: true
-    toc_depth: 4
-    number_sections: true
+toc: true
 ---
 
-# Introduction
+## Introduction
 
 Cross-entropy (CE) quantifies the difference between two probability distributions.
 As such, it comes in handy as a [loss function](https://en.wikipedia.org/wiki/Loss_function) in multi-class classification tasks (e.g., multinomial logistic regression).
@@ -31,7 +27,7 @@ It also provides an elegant solution for determining the difference between actu
 It can be used to determine the predictive performance of a classification model.
 The value of the cross-entropy is higher when the predicted classes diverge more from the true labels.
 
-# Learn by coding
+## Learn by coding
 
 In a multiclass-classification task, we calculate a separate "loss" for each class for each observation and sum the result:
 
@@ -143,7 +139,7 @@ ce
 ```
 This approach works for a binary prediction just as well.
 We only need to pay attention to storing the true and predicted probabilities in matrix form.
-For example consider the task of predicting the transmission type (automatic or not) for the cars recorded in the `mtcars` dataset.
+For example, consider the task of predicting the transmission type (automatic or not) for the cars recorded in the `mtcars` dataset.
 
 ```{r binary cross entropy}
 # Binary cross entropy ---------------------------------------------------------
@@ -185,7 +181,7 @@ ce
 
 ```
 
-It is not uncommon to devide the value of the cross-entropy by the number of units on which the computation is performed, effectively producing and average loss across the units.
+It is not uncommon to divide the value of the cross-entropy by the number of units on which the computation is performed, effectively producing an average loss across the units.
 ```{r ce binary average}
 # Express as average
 ce / nrow(mtcars)

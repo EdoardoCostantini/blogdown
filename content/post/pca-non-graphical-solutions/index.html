@@ -1,0 +1,125 @@
+---
+title: Deciding the Number of PCs with Non-Graphical Solutions to the Scree Test
+draft: false # true
+author: Edoardo Costantini
+date: '2022-05-16'
+slug: pca-non-graphical-solutions
+categories: ["Drafts", "Tutorials"]
+tags: ["PCA"]
+subtitle: ''
+summary: ''
+authors: ["admin"]
+lastmod: '2022-04-02T14:26:57+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+toc: true
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Different solutions:</p>
+<ul>
+<li><p>Kaiser Rule (aka Optimal Coordinate) <span class="math inline">\(n_{oc}\)</span>.
+In its simplest form, the Kaiser’s rule retains only the PCs with variances exceeding 1.
+If a PC has less variance than 1, it means that it explains less total variance than a single variable in the data, which makes it useless.</p></li>
+<li><p>Acceleration Factor.
+For every <span class="math inline">\(j\)</span>-th eigenvalue, the acceleration factor <span class="math inline">\(a\)</span> is calculated as the change in the slope between the line connecting the <span class="math inline">\(eig_j\)</span> and <span class="math inline">\(eig_{j-1}\)</span>, and the line connecting <span class="math inline">\(eig_j\)</span> and <span class="math inline">\(eig_{j+1}\)</span>
+<span class="math display">\[
+a_{j} = (eig_{j+1} - eig_{j}) - (eig_{j} - eig_{j-1})
+\]</span>
+Once the largest <span class="math inline">\(a_j\)</span> is found, the number of components is set to <span class="math inline">\(j-1\)</span>.</p></li>
+</ul>
+</div>
+<div id="learn-by-coding" class="section level2">
+<h2>Learn by coding</h2>
+<pre class="r"><code># Prepare environment ----------------------------------------------------------
+
+library(nFactors)
+library(psych)
+
+# Perform PCA
+res &lt;- psych::pca(Harman.5)
+
+# Extract eigenvalues
+eigenvalues &lt;- res$values
+
+# Graph
+plotuScree(x = eigenvalues)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/data-1.png" width="672" /></p>
+<pre class="r"><code># Non-graphical solutions
+ngs &lt;- nScree(x = eigenvalues)
+
+# Kaiser rule\
+nkaiser_man &lt;- sum(eigenvalues &gt; 1)
+
+# Accelration factor
+a &lt;- NULL
+for (j in 2:(length(eigenvalues) - 1)){
+  a[j] &lt;- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
+}
+
+naf_man &lt;- which.max(a) - 1
+
+# Compare results
+data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
+           nFactor = c(naf = ngs$Components[[&quot;naf&quot;]],
+                       nkaiser = ngs$Components[[&quot;nkaiser&quot;]]))</code></pre>
+<pre><code>##         manual nFactor
+## naf          2       2
+## nkaiser      2       2</code></pre>
+</div>
+<div id="tldr-just-give-me-the-code" class="section level2">
+<h2>TL;DR, just give me the code!</h2>
+<pre class="r"><code># Prepare environment ----------------------------------------------------------
+
+library(nFactors)
+library(psych)
+
+# Perform PCA
+res &lt;- psych::pca(Harman.5)
+
+# Extract eigenvalues
+eigenvalues &lt;- res$values
+
+# Graph
+plotuScree(x = eigenvalues)
+
+# Non-graphical solutions
+ngs &lt;- nScree(x = eigenvalues)
+
+# Kaiser rule\
+nkaiser_man &lt;- sum(eigenvalues &gt; 1)
+
+# Accelration factor
+a &lt;- NULL
+for (j in 2:(length(eigenvalues) - 1)){
+  a[j] &lt;- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
+}
+
+naf_man &lt;- which.max(a) - 1
+
+# Compare results
+data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
+           nFactor = c(naf = ngs$Components[[&quot;naf&quot;]],
+                       nkaiser = ngs$Components[[&quot;nkaiser&quot;]]))</code></pre>
+</div>
+<div id="other-resources" class="section level2">
+<h2>Other resources</h2>
+<ul>
+<li><a href="https://rpubs.com/juanhklopper/cross_entropy">Cross-entropy in RPubs</a></li>
+<li><a href="https://machinelearningmastery.com/cross-entropy-for-machine-learning/">A Gentle Introduction to Cross-Entropy for Machine Learning</a></li>
+<li><a href="https://gombru.github.io/2018/05/23/cross_entropy_loss/">Understanding Categorical Cross-Entropy Loss, Binary Cross-Entropy Loss, Softmax Loss, Logistic Loss, Focal Loss and all those confusing names</a></li>
+<li><a href="https://ml-cheatsheet.readthedocs.io/en/latest/loss_functions.html">ML Gloassary</a></li>
+<li><a href="https://medium.com/swlh/cross-entropy-loss-in-pytorch-c010faf97bab">Loss Functions in Machine Learning</a></li>
+</ul>
+</div>

@@ -1,0 +1,44 @@
+---
+title: Multiple Correspondence Analysis
+draft: true # true
+author: Edoardo Costantini
+date: '2022-05-17'
+slug: mca
+categories: ["PCA on categorical data"]
+tags: ["PCA", "categorical"]
+subtitle: ''
+summary: ''
+authors: ["admin"]
+lastmod: '2022-04-02T14:26:57+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+# Introduction
+
+Principal Component Analysis is often considered a purely descriptive tool that does not require rigorous distributional assumptions.
+As such, it can be used on data that diverges from the ideal multivariate normal distribution.
+It can even be used when the data is discrete.
+This type of data is particularly common in the social sciences, where researchers rely on surveys for their analysis.
+Surveys are often composed of a collection of items measuring the opinion or state of an individual with discrete response options.
+
+# Learn by coding
+
+```{r data, warning = FALSE, message = FALSE}
+
+some <- 1
+
+```
+
+# TL;DR, just give me the code!
+```{r TLDR, ref.label = knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

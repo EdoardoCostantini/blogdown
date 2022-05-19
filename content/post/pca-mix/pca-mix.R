@@ -116,3 +116,55 @@ W %*% K
 
 # Row profiles
 D_r
+
+# MCA based on Audigier et al 2017 p. 505 (p. 5 of pdf) ------------------------
+
+    # Work with categorical predictors from the tea dataset
+    x <- tea[, c("where", "how", "Tea")]
+
+    # Define row weights
+    I <- nrow(x)
+    R <- diag(1 / I, I)
+
+    # Define Z (the disjunctive table)
+    Z <- tab.disjonctif(x)
+
+    # Define column weights
+    K <- ncol(x)
+    plxk <- colMeans(Z)
+    D_sigma <- diag(plxk)
+    1 / K * solve(D_sigma)
+
+    # Define M
+    M <- matrix(rep(plxk, I), nrow = I, byrow = TRUE)
+
+    # Centered matrix?
+    Z - M
+
+# MCA based on Chavent Et Al 2017 et al 2017 p. 505 (p. 5 of pdf) -----------1  ---
+
+    # Work with categorical predictors from the tea dataset
+    x <- tea[, c("where", "how", "Tea")]
+
+    # Define Z (the disjunctive table)
+    G <- tab.disjonctif(x)
+
+    # Define row weights
+    n <- nrow(x)
+    N <- diag(1 / n, n)
+
+    # Define column weights
+    M <- diag(n / colSums(G))
+    solve(D_sigma)
+
+    # Create Z, the centered G?
+    plxk <- colMeans(G)
+    G - matrix(rep(plxk, I), nrow = I, byrow = TRUE)
+    Z <- t(t(G) - plxk)
+
+    # SVD of Z
+    u_til <- svd(Z)$u
+    lambda_til <- svd(Z)$d
+
+    # Principal Compoent Scores (factor coordinates of the rows)
+    u_til[, 1:3] %*% diag(lambda_til[1:3])

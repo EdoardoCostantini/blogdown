@@ -383,12 +383,16 @@ augmentCov <- function(covmat, center,
           }
         }
       }
+
       # Make sure the means for the factors are 0s
-      # T[1, -c(1:(p+1))] <- 0
-      # T[-c(1:(p+1)), 1] <- 0
-      # T[-c(1:(p+1)), -c(1:(p+1))] <- R
+      T[1, -c(1:(p+1))] <- 0
+      T[-c(1:(p+1)), 1] <- 0
+      T[-c(1:(p+1)), -c(1:(p+1))] <- 0
 
       theta <- ISR3::RSWP(theta, v_obs)
+      theta[1, -c(1:(p+1))] <- 0
+      theta[-c(1:(p+1)), 1] <- 0
+      theta[-c(1:(p+1)), -c(1:(p+1))] <- R
       # Note: this corresponds to the reverse sweep in the first
       # loop performed in the algorithm proposed by Schafer 1997.
       # It basically replaces the "if r_sj = 0 and theta_jj < 0".
@@ -399,6 +403,9 @@ augmentCov <- function(covmat, center,
 
     # > M-step ####
     theta <- ISR3::SWP((n^(-1) * T), 1)
+    theta[1, -c(1:(p+1))] <- 0
+    theta[-c(1:(p+1)), 1] <- 0
+    theta[-c(1:(p+1)), -c(1:(p+1))] <- R
   }
 
 # FA EM with NAs: correct sufficient stats -------------------------------------

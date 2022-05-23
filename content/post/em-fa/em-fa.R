@@ -2,7 +2,7 @@
 # Objective: Initial notes on EM for factor analysis
 # Author:    Edoardo Costantini
 # Created:   2022-05-10
-# Modified:  2022-05-10
+# Modified:  2022-05-23
 
 rm(list = ls())
 
@@ -236,8 +236,14 @@ augmentCov <- function(covmat, center,
 
 # FA EM with NAs: Naive use of augmented matrix --------------------------------
 
+  set.seed(1234)
+  # bfi_complete <- bfi[rowSums(is.na(bfi)) == 0, 1:25]
+  # Y <- bfi_complete
+  # q <- 5
+  # n <- nrow(Y)
+  # p <- ncol(Y)
   Y_miss <- mice::ampute(Y,
-                         prop = .1,
+                         prop = .3,
                          patterns = matrix(c(1, 1, 0, rep(1, ncol(Y)-3),
                                              1, 0, 1, rep(1, ncol(Y)-3),
                                              1, 0, 0, rep(1, ncol(Y)-3)),

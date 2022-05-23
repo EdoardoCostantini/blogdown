@@ -1,10 +1,10 @@
 ---
-title: Multiple Correspondence Analysis
+title: PCA with metrics, dimensionality reduction through PCA and MCA
 draft: true # true
 author: Edoardo Costantini
 date: '2022-05-17'
 slug: mca
-categories: ["PCA on categorical data"]
+categories: ["A primer on PCA"]
 tags: ["PCA", "categorical"]
 subtitle: ''
 summary: ''
@@ -16,6 +16,7 @@ image:
   focal_point: ''
   preview_only: no
 projects: []
+bibliography: references.bib
 output:
   blogdown::html_page:
     toc: true
@@ -25,11 +26,105 @@ output:
 
 # Introduction
 
-Principal Component Analysis is often considered a purely descriptive tool that does not require rigorous distributional assumptions.
-As such, it can be used on data that diverges from the ideal multivariate normal distribution.
-It can even be used when the data is discrete.
-This type of data is particularly common in the social sciences, where researchers rely on surveys for their analysis.
-Surveys are often composed of a collection of items measuring the opinion or state of an individual with discrete response options.
+**Principal Component Analysis** (PCA) is a technique that finds a low-dimensional representation of a large set of variables contained in an $n \times p$ data matrix $\mathbf{X}$ with minimal loss of information.
+We refer to this low-dimensional representation as the $n \times r$ matrix $\mathbf{Z}$, where $r < p$.
+The columns of $\mathbf{Z}$ are called principal components (PCs) of $\mathbf{X}$.
+We can write the relationship between all the PCs and $\mathbf{X}$ in matrix notation:
+\begin{equation} \label{eq:PCAmatnot}
+    \mathbf{Z} = \mathbf{X} \mathbf{\Lambda}
+\end{equation}
+where $\mathbf{\Lambda}$ is a $p \times r$ matrix of coefficients, with columns $\mathbf{\lambda}_1, \dots, \mathbf{\lambda}_r$.
+PCA can be thought of as the process of projecting the original data from a $p$-dimensional space to a lower $q$-dimensional space.
+The coefficient vectors $\mathbf{\lambda}_1, \dots, \mathbf{\lambda}_r$ define the directions in which we are projecting the $n$ observations of $\mathbf{x}_1, \dots, \mathbf{x}_p$.
+The projected values are the principal component scores $\mathbf{Z}$.
+
+The goal of PCA is to find the values of $\mathbf{\Lambda}$ that maximize the variance of the columns of $\mathbf{Z}$.
+One way to find the PCA solution for $\mathbf{\Lambda}$ is by taking the truncated [singular value decomposition](https://en.wikipedia.org/wiki/Singular_value_decomposition#Relation_to_eigenvalue_decomposition) (SVD) of $\mathbf{X}$:
+
+\begin{equation} \label{eq:SVD}
+    \mathbf{X} = \mathbf{UDV}'
+\end{equation}
+
+The PCs scores are given by the $n \times r$ matrix $\mathbf{UD}$, and the weights $\mathbf{\Lambda}$ are given by the $p \times r$ matrix $\mathbf{V}$.
+
+**Multiple Correspondence Analysis** (MCA) is generally regarded as an equivalent tool that applies to discrete data.
+Chavent et al. [-@chaventEtAl:2014] have shown how using weights on rows and columns of the input data matrix can define a general PCA framework that includes standard PCA and MCA as special cases.
+This approach is often referred to as **PCA with metrics**, as metrics are used to introduce the weights.
+In this post, I want to show how PCA and MCA are related through this framework.
+
+## Generalised Singular Value Decomposition
+
+Consider an $n \times p$ matrix of input variables $\mathbf{Z}$ with row metric $\mathbf{N}$ and column metric $\mathbf{M}$.
+The Generalized Singular Value Decomposition of $\mathbf{Z}$ can be written as:
+$$
+\mathbf{Z} = \mathbf{U \Lambda V}^T
+$$
+where:
+
+- $\mathbf{\Lambda}$ is the $r \times r$ diagonal matrix with elements equal to the square root of the non-zero eigenvalues of $\mathbf{ZMZ}^T\mathbf{N}$ and $\mathbf{Z}^T\mathbf{NZM}$;
+- $\mathbf{U}$ is the $n \times r$ matrix of the first $r$ eigenvectors of $\mathbf{ZMZ}^T\mathbf{N}$ such that $\mathbf{U}^T\mathbf{MU=I}$
+- $\mathbf{V}$ is the $p \times r$ matrix of the first $r$ eigenvectors of $\mathbf{Z}^T\mathbf{NZM}$ such that $\mathbf{V}^T\mathbf{MV=I}$;
+
+The GSVD of $\mathbf{Z}$ can be obtained by taking 
+
+- first taking the standard SVD of the transformed matrix $\tilde{\mathbf{Z}} = \mathbf{N}^{1/2}\mathbf{Z}\mathbf{M}^{1/2}$ which gives:
+$$
+\tilde{\mathbf{Z}} = \tilde{\mathbf{U}}\tilde{\mathbf{\Lambda}}\tilde{\mathbf{V}}^T
+$$
+- and then transforming each element back to the original scale
+$$
+\mathbf{\Lambda} = \tilde{\mathbf{\Lambda}}
+$$
+$$
+\mathbf{U} = \mathbf{N}^{-1/2}\tilde{\mathbf{U}}
+$$
+$$
+\mathbf{V} = \mathbf{M}^{-1/2}\tilde{\mathbf{V}}
+$$
+
+
+## Relationship of GSVD to standard SVD
+
+It's easy to see how this GSVD differs from the standard formulation of SVD simply by the presence of the metrics $\mathbf{M}$ and $\mathbf{M}$.
+As you can see [here](https://en.wikipedia.org/wiki/Singular_value_decomposition#Relation_to_eigenvalue_decomposition), in the standard formulation of SVD:
+
+- $\mathbf{\Lambda}$ is the $r \times r$ diagonal matrix with elements equal to the square root of the non-zero eigenvalues of $\mathbf{ZZ}^T$ and $\mathbf{Z}^T\mathbf{Z}$;
+- $\mathbf{U}$ is the $n \times r$ matrix of the first $r$ eigenvectors of $\mathbf{ZZ}^T$ such that $\mathbf{U}^T\mathbf{U=I}$
+- $\mathbf{V}$ is the $p \times r$ matrix of the first $r$ eigenvectors of $\mathbf{Z}^T\mathbf{NZM}$ such that $\mathbf{V}^T\mathbf{V=I}$;
+
+## PCA and MCA as special cases of GSVD
+
+The solutions for both PCA and MCA can be obtained as special cases of the GSVD approach described by setting $\mathbf{Z}$ equal to a preprocessed version of the original data $\mathbf{X}$ and using $\mathbf{N}$ and $\mathbf{M}$ to appropriately weight the rows and columns.
+
+### PCA
+
+The input data for standard PCA is the $n \times p$ matrix $\mathbf{X}$ of $n$ rows (observations) described by $p$ numerical variables.
+The columns of this matrix are usually centered and standardized.
+The GSVD can be used to find the solution to PCA by setting $\mathbf{Z}$ equal to the centered and standardized version of $\mathbf{X}$ and weighting:
+
+- its rows by $1/n$, which is obtained by setting $\mathbf{N} = \frac{1}{n}I_n$
+- its columns by $1$, which is obtained by setting $\mathbf{M} = I_p$.
+This metric indicates that the distance between two observations is the standard euclidean distance between two rows of $\mathbf{Z}$
+
+By setting these values for the metrics, it is easy to see how the GSVD of $\mathbf{X}$ reduces to the standard SVD of $\mathbf{Z}$.
+
+### MCA
+
+For an $n \times p$ data matrix $\mathbf{X}$ with $n$ observations (rows) and $p$ discrete predictors (columns).
+Each $j = 1, \dots, p$ discrete variable has $k_j$ possible values.
+The sum of the $p$ $k_j$ values is $k$. 
+$\mathbf{X}$ is preprocessed by coding each level of the discrete items as binary variables describing whether each observation takes a specific value for every discrete variable.
+This results in an $n \times k$ [complete disjunctive table](https://www.xlstat.com/en/solutions/features/complete-disjuncive-tables-creating-dummy-variables) $\mathbf{G}$, sometimes also referred to as an indicator matrix.
+
+MCA is usually obtained by applying Correspondence Analysis to $\mathbf{G}$, which means applying standard PCA to the matrices of the row profiles and the column profiles.
+In particular, for the goal of obtaining a lower-dimensional representation of $\mathbf{X}$ we are interested in the standard PCA of the row profiles.
+Within the framework of PCA with metrics, MCA can be obtained by first setting:
+
+- $\mathbf{Z}$ to the centered $\mathbf{G}$
+- $\mathbf{N} = \frac{1}{n}I_n$
+- $\mathbf{M} = \text{diag}(\frac{n}{n_s}, s = 1, \dots, k)$
+
+The coordinates of the observations (the principal component scores) can be obtained by applying the GSVD of $\mathbf{Z}$ with the given metrics.
 
 # Learn by coding
 

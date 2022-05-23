@@ -1,0 +1,98 @@
+---
+title: Principal Component Analysis and SVD
+draft: true # true
+author: Edoardo Costantini
+date: '2022-05-13'
+slug: pcasvd
+categories: ["A primer on PCA"]
+tags: ["PCA", "SVD"]
+subtitle: ''
+summary: ''
+authors: ["admin"]
+lastmod: '2022-04-02T14:26:57+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+bibliography: references.bib
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a>
+<ul>
+<li><a href="#svd-solution-to-pca"><span class="toc-section-number">1.1</span> SVD solution to PCA</a></li>
+<li><a href="#eigen-decomposition-solution-to-pca"><span class="toc-section-number">1.2</span> Eigen-decomposition solution to PCA</a></li>
+</ul></li>
+<li><a href="#learn-by-coding"><span class="toc-section-number">2</span> Learn by coding</a></li>
+<li><a href="#tldr-just-give-me-the-code"><span class="toc-section-number">3</span> TL;DR, just give me the code!</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
+<p>Principal Component Analysis (PCA) is a technique that finds a low-dimensional representation of a large set of variables contained in an <span class="math inline">\(n \times p\)</span> data matrix <span class="math inline">\(\mathbf{X}\)</span> with minimal loss of information.
+We refer to this low-dimensional representation as the <span class="math inline">\(n \times r\)</span> matrix <span class="math inline">\(\mathbf{Z}\)</span>, where <span class="math inline">\(r &lt; p\)</span>.
+The columns of <span class="math inline">\(\mathbf{Z}\)</span> are called principal components (PCs) of <span class="math inline">\(\mathbf{X}\)</span>.
+We follow the common practice of assuming that the columns of <span class="math inline">\(\mathbf{X}\)</span> are mean-centered and scaled to have a variance of 1.
+The first PC of <span class="math inline">\(\mathbf{X}\)</span> is the linear combination of the columns of <span class="math inline">\(\mathbf{X}\)</span> with the largest variance:
+<span class="math display">\[
+    \mathbf{z}_1 = \lambda_{11} \mathbf{x}_1 + \lambda_{12} \mathbf{x}_2 + \dots + \lambda_{1p} \mathbf{x}_p = \mathbf{X} \mathbf{\lambda}_1
+\]</span>
+with <span class="math inline">\(\mathbf{\lambda}_1\)</span> being the <span class="math inline">\(1 \times p\)</span> vector of coefficients <span class="math inline">\(\lambda_{11}, \dots, \lambda_{1p}\)</span>.
+The second principal component (<span class="math inline">\(\mathbf{z}_2\)</span>) is defined by finding the vector of coefficients <span class="math inline">\(\mathbf{\lambda}_2\)</span> giving the linear combination of <span class="math inline">\(\mathbf{x}_1, \dots, \mathbf{x}_p\)</span> with maximal variance out of all the linear combinations that are uncorrelated with <span class="math inline">\(\mathbf{z}_1\)</span>.
+Every subsequent column of <span class="math inline">\(\mathbf{Z}\)</span> can be understood in the same way.
+As a result, the PCs are independent by definition and every subsequent PC has less variance than the preceding one.
+We can write the relationship between all the PCs and <span class="math inline">\(\mathbf{X}\)</span> in matrix notation:
+<span class="math display">\[\begin{equation} \label{eq:PCAmatnot}
+    \mathbf{Z} = \mathbf{X} \mathbf{\Lambda}
+\end{equation}\]</span>
+where <span class="math inline">\(\mathbf{\Lambda}\)</span> is a <span class="math inline">\(p \times r\)</span> matrix of weights, with columns <span class="math inline">\(\mathbf{\lambda}_1, \dots, \mathbf{\lambda}_q\)</span>.
+PCA can be thought of as the process of projecting the original data from a <span class="math inline">\(p\)</span>-dimensional space to a lower <span class="math inline">\(q\)</span>-dimensional space.
+The coefficient vectors <span class="math inline">\(\mathbf{\lambda}_1, \dots, \mathbf{\lambda}_r\)</span> define the directions in which we are projecting the <span class="math inline">\(n\)</span> observations of <span class="math inline">\(\mathbf{x}_1, \dots, \mathbf{x}_p\)</span>.
+The projected values are the principal component scores <span class="math inline">\(\mathbf{Z}\)</span>.</p>
+<p>The goal of PCA is to find the values of <span class="math inline">\(\mathbf{\Lambda}\)</span> that maximize the variance of the columns of <span class="math inline">\(\mathbf{Z}\)</span>.
+One way to find the PCA solution for <span class="math inline">\(\mathbf{\Lambda}\)</span> is by taking the truncated <a href="https://en.wikipedia.org/wiki/Singular_value_decomposition#Relation_to_eigenvalue_decomposition">singular value decomposition</a> (SVD) of <span class="math inline">\(\mathbf{X}\)</span>:</p>
+<p><span class="math display">\[\begin{equation} \label{eq:SVD}
+    \mathbf{X} = \mathbf{UDV}&#39;
+\end{equation}\]</span></p>
+<p>where:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{D}\)</span> is the <span class="math inline">\(r \times r\)</span> diagonal matrix with elements equal to the square root of the non-zero eigenvalues of <span class="math inline">\(\mathbf{XX}^T\)</span> and <span class="math inline">\(\mathbf{X}^T\mathbf{X}\)</span>;</li>
+<li><span class="math inline">\(\mathbf{U}\)</span> is the <span class="math inline">\(n \times r\)</span> matrix of the first <span class="math inline">\(r\)</span> eigenvectors of <span class="math inline">\(\mathbf{XX}^T\)</span> such that <span class="math inline">\(\mathbf{U}^T\mathbf{U=I}\)</span></li>
+<li><span class="math inline">\(\mathbf{V}\)</span> is the <span class="math inline">\(p \times r\)</span> matrix of the first <span class="math inline">\(r\)</span> eigenvectors of <span class="math inline">\(\mathbf{X}^T\mathbf{NXM}\)</span> such that <span class="math inline">\(\mathbf{V}^T\mathbf{V=I}\)</span>;</li>
+</ul>
+<p>The PCs scores are given by the <span class="math inline">\(n \times r\)</span> matrix <span class="math inline">\(\mathbf{UD}\)</span>, and the weights <span class="math inline">\(\mathbf{\Lambda}\)</span> are given by the <span class="math inline">\(p \times r\)</span> matrix <span class="math inline">\(\mathbf{V}\)</span> <span class="citation">(<a href="#ref-jolliffe:2002" role="doc-biblioref">Jolliffe 2002, p45</a>)</span>.</p>
+<div id="svd-solution-to-pca" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> SVD solution to PCA</h2>
+</div>
+<div id="eigen-decomposition-solution-to-pca" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> Eigen-decomposition solution to PCA</h2>
+</div>
+</div>
+<div id="learn-by-coding" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Learn by coding</h1>
+<pre class="r"><code>some &lt;- 1</code></pre>
+</div>
+<div id="tldr-just-give-me-the-code" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> TL;DR, just give me the code!</h1>
+<pre class="r"><code>some &lt;- 1</code></pre>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-jolliffe:2002" class="csl-entry">
+Jolliffe, Ian T. 2002. <em>Principal Component Analysis</em>. Springer.
+</div>
+</div>
+</div>

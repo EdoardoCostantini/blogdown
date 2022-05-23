@@ -144,7 +144,7 @@ round(
 
 It is important to note the effect of centering and scaling.
 When fitting ridge regression, many sources recommend centering the data.
-This allows to separate the estimation of the intercept from the estimation of the regression coefficients.
+This allows separating the estimation of the intercept from the estimation of the regression coefficients.
 As a result, only the regression coefficients are penalised.
 To understand the effect of centering, consider what happens in regular OLS estimation when **predictors are centered**:
 ```{r centering X}

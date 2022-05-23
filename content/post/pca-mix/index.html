@@ -1,10 +1,10 @@
 ---
-title: Multiple Correspondence Analysis
+title: PCA with metrics, dimensionality reduction through PCA and MCA
 draft: true # true
 author: Edoardo Costantini
 date: '2022-05-17'
 slug: mca
-categories: ["PCA on categorical data"]
+categories: ["A primer on PCA"]
 tags: ["PCA", "categorical"]
 subtitle: ''
 summary: ''
@@ -16,6 +16,7 @@ image:
   focal_point: ''
   preview_only: no
 projects: []
+bibliography: references.bib
 output:
   blogdown::html_page:
     toc: true
@@ -27,7 +28,16 @@ output:
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a>
+<ul>
+<li><a href="#generalised-singular-value-decomposition"><span class="toc-section-number">1.1</span> Generalised Singular Value Decomposition</a></li>
+<li><a href="#relationship-of-gsvd-to-standard-svd"><span class="toc-section-number">1.2</span> Relationship of GSVD to standard SVD</a></li>
+<li><a href="#pca-and-mca-as-special-cases-of-gsvd"><span class="toc-section-number">1.3</span> PCA and MCA as special cases of GSVD</a>
+<ul>
+<li><a href="#pca"><span class="toc-section-number">1.3.1</span> PCA</a></li>
+<li><a href="#mca"><span class="toc-section-number">1.3.2</span> MCA</a></li>
+</ul></li>
+</ul></li>
 <li><a href="#learn-by-coding"><span class="toc-section-number">2</span> Learn by coding</a></li>
 <li><a href="#tldr-just-give-me-the-code"><span class="toc-section-number">3</span> TL;DR, just give me the code!</a></li>
 </ul>
@@ -35,11 +45,101 @@ output:
 
 <div id="introduction" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>Principal Component Analysis is often considered a purely descriptive tool that does not require rigorous distributional assumptions.
-As such, it can be used on data that diverges from the ideal multivariate normal distribution.
-It can even be used when the data is discrete.
-This type of data is particularly common in the social sciences, where researchers rely on surveys for their analysis.
-Surveys are often composed of a collection of items measuring the opinion or state of an individual with discrete response options.</p>
+<p><strong>Principal Component Analysis</strong> (PCA) is a technique that finds a low-dimensional representation of a large set of variables contained in an <span class="math inline">\(n \times p\)</span> data matrix <span class="math inline">\(\mathbf{X}\)</span> with minimal loss of information.
+We refer to this low-dimensional representation as the <span class="math inline">\(n \times r\)</span> matrix <span class="math inline">\(\mathbf{Z}\)</span>, where <span class="math inline">\(r &lt; p\)</span>.
+The columns of <span class="math inline">\(\mathbf{Z}\)</span> are called principal components (PCs) of <span class="math inline">\(\mathbf{X}\)</span>.
+We can write the relationship between all the PCs and <span class="math inline">\(\mathbf{X}\)</span> in matrix notation:
+<span class="math display">\[\begin{equation} \label{eq:PCAmatnot}
+    \mathbf{Z} = \mathbf{X} \mathbf{\Lambda}
+\end{equation}\]</span>
+where <span class="math inline">\(\mathbf{\Lambda}\)</span> is a <span class="math inline">\(p \times r\)</span> matrix of coefficients, with columns <span class="math inline">\(\mathbf{\lambda}_1, \dots, \mathbf{\lambda}_r\)</span>.
+PCA can be thought of as the process of projecting the original data from a <span class="math inline">\(p\)</span>-dimensional space to a lower <span class="math inline">\(q\)</span>-dimensional space.
+The coefficient vectors <span class="math inline">\(\mathbf{\lambda}_1, \dots, \mathbf{\lambda}_r\)</span> define the directions in which we are projecting the <span class="math inline">\(n\)</span> observations of <span class="math inline">\(\mathbf{x}_1, \dots, \mathbf{x}_p\)</span>.
+The projected values are the principal component scores <span class="math inline">\(\mathbf{Z}\)</span>.</p>
+<p>The goal of PCA is to find the values of <span class="math inline">\(\mathbf{\Lambda}\)</span> that maximize the variance of the columns of <span class="math inline">\(\mathbf{Z}\)</span>.
+One way to find the PCA solution for <span class="math inline">\(\mathbf{\Lambda}\)</span> is by taking the truncated <a href="https://en.wikipedia.org/wiki/Singular_value_decomposition#Relation_to_eigenvalue_decomposition">singular value decomposition</a> (SVD) of <span class="math inline">\(\mathbf{X}\)</span>:</p>
+<p><span class="math display">\[\begin{equation} \label{eq:SVD}
+    \mathbf{X} = \mathbf{UDV}&#39;
+\end{equation}\]</span></p>
+<p>The PCs scores are given by the <span class="math inline">\(n \times r\)</span> matrix <span class="math inline">\(\mathbf{UD}\)</span>, and the weights <span class="math inline">\(\mathbf{\Lambda}\)</span> are given by the <span class="math inline">\(p \times r\)</span> matrix <span class="math inline">\(\mathbf{V}\)</span>.</p>
+<p><strong>Multiple Correspondence Analysis</strong> (MCA) is generally regarded as an equivalent tool that applies to discrete data.
+Chavent et al. <span class="citation">(<a href="#ref-chaventEtAl:2014" role="doc-biblioref">2014</a>)</span> have shown how using weights on rows and columns of the input data matrix can define a general PCA framework that includes standard PCA and MCA as special cases.
+This approach is often referred to as <strong>PCA with metrics</strong>, as metrics are used to introduce the weights.
+In this post, I want to show how PCA and MCA are related through this framework.</p>
+<div id="generalised-singular-value-decomposition" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> Generalised Singular Value Decomposition</h2>
+<p>Consider an <span class="math inline">\(n \times p\)</span> matrix of input variables <span class="math inline">\(\mathbf{Z}\)</span> with row metric <span class="math inline">\(\mathbf{N}\)</span> and column metric <span class="math inline">\(\mathbf{M}\)</span>.
+The Generalized Singular Value Decomposition of <span class="math inline">\(\mathbf{Z}\)</span> can be written as:
+<span class="math display">\[
+\mathbf{Z} = \mathbf{U \Lambda V}^T
+\]</span>
+where:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{\Lambda}\)</span> is the <span class="math inline">\(r \times r\)</span> diagonal matrix with elements equal to the square root of the non-zero eigenvalues of <span class="math inline">\(\mathbf{ZMZ}^T\mathbf{N}\)</span> and <span class="math inline">\(\mathbf{Z}^T\mathbf{NZM}\)</span>;</li>
+<li><span class="math inline">\(\mathbf{U}\)</span> is the <span class="math inline">\(n \times r\)</span> matrix of the first <span class="math inline">\(r\)</span> eigenvectors of <span class="math inline">\(\mathbf{ZMZ}^T\mathbf{N}\)</span> such that <span class="math inline">\(\mathbf{U}^T\mathbf{MU=I}\)</span></li>
+<li><span class="math inline">\(\mathbf{V}\)</span> is the <span class="math inline">\(p \times r\)</span> matrix of the first <span class="math inline">\(r\)</span> eigenvectors of <span class="math inline">\(\mathbf{Z}^T\mathbf{NZM}\)</span> such that <span class="math inline">\(\mathbf{V}^T\mathbf{MV=I}\)</span>;</li>
+</ul>
+<p>The GSVD of <span class="math inline">\(\mathbf{Z}\)</span> can be obtained by taking</p>
+<ul>
+<li>first taking the standard SVD of the transformed matrix <span class="math inline">\(\tilde{\mathbf{Z}} = \mathbf{N}^{1/2}\mathbf{Z}\mathbf{M}^{1/2}\)</span> which gives:
+<span class="math display">\[
+\tilde{\mathbf{Z}} = \tilde{\mathbf{U}}\tilde{\mathbf{\Lambda}}\tilde{\mathbf{V}}^T
+\]</span></li>
+<li>and then transforming each element back to the original scale
+<span class="math display">\[
+\mathbf{\Lambda} = \tilde{\mathbf{\Lambda}}
+\]</span>
+<span class="math display">\[
+\mathbf{U} = \mathbf{N}^{-1/2}\tilde{\mathbf{U}}
+\]</span>
+<span class="math display">\[
+\mathbf{V} = \mathbf{M}^{-1/2}\tilde{\mathbf{V}}
+\]</span></li>
+</ul>
+</div>
+<div id="relationship-of-gsvd-to-standard-svd" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> Relationship of GSVD to standard SVD</h2>
+<p>It’s easy to see how this GSVD differs from the standard formulation of SVD simply by the presence of the metrics <span class="math inline">\(\mathbf{M}\)</span> and <span class="math inline">\(\mathbf{M}\)</span>.
+As you can see <a href="https://en.wikipedia.org/wiki/Singular_value_decomposition#Relation_to_eigenvalue_decomposition">here</a>, in the standard formulation of SVD:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{\Lambda}\)</span> is the <span class="math inline">\(r \times r\)</span> diagonal matrix with elements equal to the square root of the non-zero eigenvalues of <span class="math inline">\(\mathbf{ZZ}^T\)</span> and <span class="math inline">\(\mathbf{Z}^T\mathbf{Z}\)</span>;</li>
+<li><span class="math inline">\(\mathbf{U}\)</span> is the <span class="math inline">\(n \times r\)</span> matrix of the first <span class="math inline">\(r\)</span> eigenvectors of <span class="math inline">\(\mathbf{ZZ}^T\)</span> such that <span class="math inline">\(\mathbf{U}^T\mathbf{U=I}\)</span></li>
+<li><span class="math inline">\(\mathbf{V}\)</span> is the <span class="math inline">\(p \times r\)</span> matrix of the first <span class="math inline">\(r\)</span> eigenvectors of <span class="math inline">\(\mathbf{Z}^T\mathbf{NZM}\)</span> such that <span class="math inline">\(\mathbf{V}^T\mathbf{V=I}\)</span>;</li>
+</ul>
+</div>
+<div id="pca-and-mca-as-special-cases-of-gsvd" class="section level2" number="1.3">
+<h2><span class="header-section-number">1.3</span> PCA and MCA as special cases of GSVD</h2>
+<p>The solutions for both PCA and MCA can be obtained as special cases of the GSVD approach described by setting <span class="math inline">\(\mathbf{Z}\)</span> equal to a preprocessed version of the original data <span class="math inline">\(\mathbf{X}\)</span> and using <span class="math inline">\(\mathbf{N}\)</span> and <span class="math inline">\(\mathbf{M}\)</span> to appropriately weight the rows and columns.</p>
+<div id="pca" class="section level3" number="1.3.1">
+<h3><span class="header-section-number">1.3.1</span> PCA</h3>
+<p>The input data for standard PCA is the <span class="math inline">\(n \times p\)</span> matrix <span class="math inline">\(\mathbf{X}\)</span> of <span class="math inline">\(n\)</span> rows (observations) described by <span class="math inline">\(p\)</span> numerical variables.
+The columns of this matrix are usually centered and standardized.
+The GSVD can be used to find the solution to PCA by setting <span class="math inline">\(\mathbf{Z}\)</span> equal to the centered and standardized version of <span class="math inline">\(\mathbf{X}\)</span> and weighting:</p>
+<ul>
+<li>its rows by <span class="math inline">\(1/n\)</span>, which is obtained by setting <span class="math inline">\(\mathbf{N} = \frac{1}{n}I_n\)</span></li>
+<li>its columns by <span class="math inline">\(1\)</span>, which is obtained by setting <span class="math inline">\(\mathbf{M} = I_p\)</span>.
+This metric indicates that the distance between two observations is the standard euclidean distance between two rows of <span class="math inline">\(\mathbf{Z}\)</span></li>
+</ul>
+<p>By setting these values for the metrics, it is easy to see how the GSVD of <span class="math inline">\(\mathbf{X}\)</span> reduces to the standard SVD of <span class="math inline">\(\mathbf{Z}\)</span>.</p>
+</div>
+<div id="mca" class="section level3" number="1.3.2">
+<h3><span class="header-section-number">1.3.2</span> MCA</h3>
+<p>For an <span class="math inline">\(n \times p\)</span> data matrix <span class="math inline">\(\mathbf{X}\)</span> with <span class="math inline">\(n\)</span> observations (rows) and <span class="math inline">\(p\)</span> discrete predictors (columns).
+Each <span class="math inline">\(j = 1, \dots, p\)</span> discrete variable has <span class="math inline">\(k_j\)</span> possible values.
+The sum of the <span class="math inline">\(p\)</span> <span class="math inline">\(k_j\)</span> values is <span class="math inline">\(k\)</span>.
+<span class="math inline">\(\mathbf{X}\)</span> is preprocessed by coding each level of the discrete items as binary variables describing whether each observation takes a specific value for every discrete variable.
+This results in an <span class="math inline">\(n \times k\)</span> <a href="https://www.xlstat.com/en/solutions/features/complete-disjuncive-tables-creating-dummy-variables">complete disjunctive table</a> <span class="math inline">\(\mathbf{G}\)</span>, sometimes also referred to as an indicator matrix.</p>
+<p>MCA is usually obtained by applying Correspondence Analysis to <span class="math inline">\(\mathbf{G}\)</span>, which means applying standard PCA to the matrices of the row profiles and the column profiles.
+In particular, for the goal of obtaining a lower-dimensional representation of <span class="math inline">\(\mathbf{X}\)</span> we are interested in the standard PCA of the row profiles.
+Within the framework of PCA with metrics, MCA can be obtained by first setting:</p>
+<ul>
+<li><span class="math inline">\(\mathbf{Z}\)</span> to the centered <span class="math inline">\(\mathbf{G}\)</span></li>
+<li><span class="math inline">\(\mathbf{N} = \frac{1}{n}I_n\)</span></li>
+<li><span class="math inline">\(\mathbf{M} = \text{diag}(\frac{n}{n_s}, s = 1, \dots, k)\)</span></li>
+</ul>
+<p>The coordinates of the observations (the principal component scores) can be obtained by applying the GSVD of <span class="math inline">\(\mathbf{Z}\)</span> with the given metrics.</p>
+</div>
+</div>
 </div>
 <div id="learn-by-coding" class="section level1" number="2">
 <h1><span class="header-section-number">2</span> Learn by coding</h1>
@@ -48,4 +148,9 @@ Surveys are often composed of a collection of items measuring the opinion or sta
 <div id="tldr-just-give-me-the-code" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> TL;DR, just give me the code!</h1>
 <pre class="r"><code>some &lt;- 1</code></pre>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-chaventEtAl:2014" class="csl-entry">
+Chavent, Marie, Vanessa Kuentz-Simonet, Amaury Labenne, and Jérôme Saracco. 2014. <span>“Multivariate Analysis of Mixed Data: The r Package PCAmixdata.”</span> <em>arXiv Preprint arXiv:1411.4911</em>.
+</div>
+</div>
 </div>

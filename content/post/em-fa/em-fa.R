@@ -234,7 +234,7 @@ augmentCov <- function(covmat, center,
   ), round, 3)
 
 
-# FA EM with NAs: Naive use of augemnted matrix --------------------------------
+# FA EM with NAs: Naive use of augmented matrix --------------------------------
 
   Y_miss <- mice::ampute(Y,
                          prop = .1,
@@ -293,10 +293,10 @@ augmentCov <- function(covmat, center,
 
   Tobs <- Reduce("+", Tobs_s)
 
-  # Define intial theta0
+  # Define initial theta0
 
   # Constants
-  a <- Ybar <- colMeans(Y_m[1:p], na.rm = TRUE)
+  a <- Ybar <- colMeans(Y_m[, 1:p], na.rm = TRUE)
   R <- diag(q)
   S_i <- 1:q
   B <- B0 <- matrix(.5, nrow = q, ncol = p)
@@ -319,7 +319,7 @@ augmentCov <- function(covmat, center,
   # Starting values
   theta <- theta0
 
-  iters <- 3
+  iters <- 1e2
 
   # Iterations
   for (it in 1:iters) {
@@ -356,6 +356,15 @@ augmentCov <- function(covmat, center,
           T[1, J + 1] <- T[1, J + 1] + cjs[i, j]
           T[J + 1, 1] <- T[1, J + 1]
 
+          # Update for covariances w/ observed covariates for this id
+          # (for Ks observed for this id)
+          for (k in seq_along(v_obs)) {
+            # k <- 1
+            K <- which(v_all == v_obs[k])
+            T[K + 1, J + 1] <- T[K + 1, J + 1] + cjs[i, j] * Y[obs[i], K]
+            T[J + 1, K + 1] <- T[K + 1, J + 1]
+          }
+
           # Update for covariances w/ unobserved covariates for this id
           # (both j and k missing, includes covariances with itself k = j)
           for (k in seq_along(v_mis)) {
@@ -371,6 +380,8 @@ augmentCov <- function(covmat, center,
       # Make sure the means for the factors are 0s
       # T[1, -c(1:(p+1))] <- 0
       # T[-c(1:(p+1)), 1] <- 0
+      # T[-c(1:(p+1)), -c(1:(p+1))] <- R
+
       theta <- ISR3::RSWP(theta, v_obs)
       # Note: this corresponds to the reverse sweep in the first
       # loop performed in the algorithm proposed by Schafer 1997.

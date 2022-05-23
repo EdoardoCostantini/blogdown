@@ -107,6 +107,14 @@ emFast <- function (Y, iters, theta0){
             T[1, J+1] <- T[1, J+1] + cjs[i, j]
             T[J+1, 1] <- T[1, J+1]
 
+            # Update for covariances w/ observed covariates for this id
+            # (for Ks observed for this id)
+            for(k in seq_along( v_obs )){
+              # k <- 1
+              K <- which(v_all == v_obs[k])
+              T[K+1, J+1] <- T[K+1, J+1] + cjs[i, j] * Y[obs[i], K]
+              T[J+1, K+1] <- T[K+1, J+1]
+            }
 
             # Update for covariances w/ unobserved covariates for this id
             # (both j and k missing, includes covariances with itself k = j)

@@ -1,0 +1,69 @@
+---
+title: Implementing a PLS alogirthm in R
+draft: true # true
+author: Edoardo Costantini
+date: '2022-06-13'
+slug: pls-algorithm-r
+categories: ["High-dimensional"]
+tags: ["PCA"]
+subtitle: ''
+summary: ''
+authors: ["admin"]
+lastmod: '2022-04-02T14:26:57+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+toc: true
+---
+
+## Introduction
+
+Describe PLS theory
+
+Report Algorithm 3.3 p.103 as in HastieEtAl2017 - The Elements of Statistical Learning
+
+## Learn by coding
+
+```{r data, warning = FALSE, message = FALSE}
+# Prepare environment ----------------------------------------------------------
+
+library(nFactors)
+library(psych)
+
+# Perform PCA
+res <- psych::pca(Harman.5)
+
+# Extract eigenvalues
+eigenvalues <- res$values
+
+# Graph
+plotuScree(x = eigenvalues)
+
+# Non-graphical solutions
+ngs <- nScree(x = eigenvalues)
+
+# Kaiser rule\
+nkaiser_man <- sum(eigenvalues > 1)
+
+# Accelration factor
+a <- NULL
+for (j in 2:(length(eigenvalues) - 1)){
+  a[j] <- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
+}
+
+naf_man <- which.max(a) - 1
+
+# Compare results
+data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
+           nFactor = c(naf = ngs$Components[["naf"]],
+                       nkaiser = ngs$Components[["nkaiser"]]))
+
+```
+
+
+## TL;DR, just give me the code!
+```{r TLDR, ref.label = knitr::all_labels(), echo=TRUE, eval=FALSE}
+```

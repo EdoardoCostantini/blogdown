@@ -1,0 +1,105 @@
+---
+title: Implementing a PLS alogirthm in R
+draft: true # true
+author: Edoardo Costantini
+date: '2022-06-13'
+slug: pls-algorithm-r
+categories: ["High-dimensional"]
+tags: ["PCA"]
+subtitle: ''
+summary: ''
+authors: ["admin"]
+lastmod: '2022-04-02T14:26:57+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+toc: true
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>Describe PLS theory</p>
+<p>Report Algorithm 3.3 p.103 as in HastieEtAl2017 - The Elements of Statistical Learning</p>
+</div>
+<div id="learn-by-coding" class="section level2">
+<h2>Learn by coding</h2>
+<pre class="r"><code># Prepare environment ----------------------------------------------------------
+
+library(nFactors)
+library(psych)
+
+# Perform PCA
+res &lt;- psych::pca(Harman.5)
+
+# Extract eigenvalues
+eigenvalues &lt;- res$values
+
+# Graph
+plotuScree(x = eigenvalues)</code></pre>
+<p><img src="{{< blogdown/postref >}}index_files/figure-html/data-1.png" width="672" /></p>
+<pre class="r"><code># Non-graphical solutions
+ngs &lt;- nScree(x = eigenvalues)
+
+# Kaiser rule\
+nkaiser_man &lt;- sum(eigenvalues &gt; 1)
+
+# Accelration factor
+a &lt;- NULL
+for (j in 2:(length(eigenvalues) - 1)){
+  a[j] &lt;- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
+}
+
+naf_man &lt;- which.max(a) - 1
+
+# Compare results
+data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
+           nFactor = c(naf = ngs$Components[[&quot;naf&quot;]],
+                       nkaiser = ngs$Components[[&quot;nkaiser&quot;]]))</code></pre>
+<pre><code>##         manual nFactor
+## naf          2       2
+## nkaiser      2       2</code></pre>
+</div>
+<div id="tldr-just-give-me-the-code" class="section level2">
+<h2>TL;DR, just give me the code!</h2>
+<pre class="r"><code># Prepare environment ----------------------------------------------------------
+
+library(nFactors)
+library(psych)
+
+# Perform PCA
+res &lt;- psych::pca(Harman.5)
+
+# Extract eigenvalues
+eigenvalues &lt;- res$values
+
+# Graph
+plotuScree(x = eigenvalues)
+
+# Non-graphical solutions
+ngs &lt;- nScree(x = eigenvalues)
+
+# Kaiser rule\
+nkaiser_man &lt;- sum(eigenvalues &gt; 1)
+
+# Accelration factor
+a &lt;- NULL
+for (j in 2:(length(eigenvalues) - 1)){
+  a[j] &lt;- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
+}
+
+naf_man &lt;- which.max(a) - 1
+
+# Compare results
+data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
+           nFactor = c(naf = ngs$Components[[&quot;naf&quot;]],
+                       nkaiser = ngs$Components[[&quot;nkaiser&quot;]]))</code></pre>
+</div>

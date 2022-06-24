@@ -47,7 +47,7 @@ To get a better grasp of the residual standard error, let's start by regressing 
 ```{r fit, warning = FALSE, message = FALSE}
 # Fit a linear model -----------------------------------------------------------
 
-lm_fit <- lm(mpg ~ cyl + hp + wt, data = mtcars)
+  lm_fit <- lm(mpg ~ cyl + hp + wt, data = mtcars)
 
 ```
 

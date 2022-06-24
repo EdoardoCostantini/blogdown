@@ -49,7 +49,7 @@ SE_{resid} = \sqrt{ \frac{ \sum^{n}_{i = 1}(y_i - \hat{y}_i)^2 }{df_{resid}} }
 To get a better grasp of the residual standard error, let’s start by regressing the miles per gallon (mpg) on the number of cylinders (cyl), horsepower (hp), and weight (wt) of cars from the standard <code>mtcars</code> R dataset.</p>
 <pre class="r"><code># Fit a linear model -----------------------------------------------------------
 
-lm_fit &lt;- lm(mpg ~ cyl + hp + wt, data = mtcars)</code></pre>
+  lm_fit &lt;- lm(mpg ~ cyl + hp + wt, data = mtcars)</code></pre>
 <p>We can compute the residual standard error following the formula described above:</p>
 <pre class="r"><code># Compute the residual standard error manually ---------------------------------
 
@@ -79,7 +79,7 @@ lm_fit &lt;- lm(mpg ~ cyl + hp + wt, data = mtcars)</code></pre>
 <h2>TL;DR, just give me the code!</h2>
 <pre class="r"><code># Fit a linear model -----------------------------------------------------------
 
-lm_fit &lt;- lm(mpg ~ cyl + hp + wt, data = mtcars)
+  lm_fit &lt;- lm(mpg ~ cyl + hp + wt, data = mtcars)
 
 # Compute the residual standard error manually ---------------------------------
 

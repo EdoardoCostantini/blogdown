@@ -63,6 +63,9 @@ data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
 
 ```
 
+## Degrees of freedom of the residuals
+
+
 
 ## TL;DR, just give me the code!
 ```{r TLDR, ref.label = knitr::all_labels(), echo=TRUE, eval=FALSE}

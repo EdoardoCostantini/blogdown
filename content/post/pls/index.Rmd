@@ -21,47 +21,78 @@ toc: true
 
 ## Introduction
 
-Describe PLS theory
+Many data analysts face the problem of analyzing data sets with many, often highly correlated, variables. 
+Partial Least Square Regression (PLSR) is a regression method that uses linear combinations of the original predictors to reduce their dimensionality.
+As principal component regression, PLS uses derived inputs, however, it differs from PCR by how the linear combinations are constructed.
 
-Report Algorithm 3.3 p.103 as in HastieEtAl2017 - The Elements of Statistical Learning
+Given a set of predictors $X_{n \times p}$ and a vector of dependent variable scores $y_{n \times 1}$, the least-square solution for the multiple linear regression
+
+$$
+y = X \beta + \epsilon\text{, with } \epsilon \sim N(0, \sigma^2)
+$$
+
+is 
+
+$$
+\beta = (X'X)^{-1}X'y
+$$
+
+where $X'$ is the transpose of the data matrix $X$, and $()^{-1}$ is the matrix inverse.
+When collinearity is present in $X$ or $p > n$, then $X'X$ is singular and its inverse cannot be computed.
+Derived input regression methods like PCR and PLSR bypass this problem by taking linear combinations of the columns of the original $X$ and regressing $Y$ on just a few of these linear combinations.
+The peculiarity of PLSR is that it includes information on both $X$ and $Y$ in the definition of the linear combinations.
+In this post, we look at two algorithms to estimate PLSR to get a better understanding of the method.
+
+### Popular algorithms to implement PLS
+
+Here, I describe informally the algorithm steps:
+
+1. Preprocessing the data - the columns of the input matrix $X$ are standardized to have mean 0 and variance 1.
+2. The cross-product of every column of $X$ and $y$ is computed: $\rho_{1j} = x_{j}' y$ for $j = 1, \dots, p$. 
+3. Compute the first partial-least-square direction $z_1$ - The cross-products $\rho_{1j}$ are used as weights to obtain a linear combination of the columns: $z_1 = \sum \rho_{1j} x_{j}$. This implies that the contribution of each column to $z_1$ is weighted by their univariate relationship with the dependent variable $y$.
+4. Regression of $y$ on $z_1$ - The outcome variable $y$ is regressed on this first direction $z_1$ to obtain $\hat{\theta}_1$.
+5. Orthogonalization of $X$ - All columns of $X$ are orthogonalized with respect to $z_1$.
+6. The cross-product of every column of $X$ and $y$ is computed again: $\rho_{2j} = x_{j}' y$ for $j = 1, \dots, p$.
+7. Compute the second partial-least-square direction $z_2$ - The cross-products $\rho_{2j}$ are used as weights to obtain a linear combination of the columns: $z_2 = \sum \rho_{2j} x_{j}$. Notice that the columns $x_j$ we are using now are orthogonal to the previous partial least square direction $z_1$.
+8. Regression of $y$ on $z_2$ - The outcome variable $y$ is regressed on the second direction $z_2$ to obtain $\hat{\theta}_2$.
+9. Orthogonalization of $X$ - All columns of $X$ are orthogonalized with respect to $z_2$.
+
+The procedure continues until $M$ partial least square directions have been computed.
+The result is a set of independent directions that have both high variance and high correlation with the dependent variable, in contrast to PCR which finds a set of independent directions that have high variance.
+
+Now we report pseudo-code for the implementation of the PLS algorithm (inspired by Report Algorithm 3.3 p.103 as in HastieEtAl2017).
+We will use it to write the R code in the next session.
+
+1. Standardized each $x_j$ to have mean 0 and variance 1
+2. Set:
+   - $\hat{y}^{(0)} = \bar{y}1$
+   - $x_{j}^{(0)} = x_{j}$
+3. For $m = 1, 2, \dots, M$
+    a. $z_m = \sum_{j = 1}^{p} \rho_{mj}x_{j}^{(m-1)}$
+    b. $\hat{\theta}_m = \frac{z_m'y}{z_m' z_m}$
+    c. $\hat{y}^{(m)} = \hat{y}^{(m-1)} + \hat{\theta}_m z_m$
+    d. for $j = 1, \dots, p$ orthogonalize $x_{j}$ with respect to $z_m$: $x_{j}^{(m)} = x_{j}^{(m-1)} - \frac{z_m' x_{j}^{(m)}}{z_m' z_m}z_m$
+4. Output the sequence of fitted vectors $\hat{y}^{m}$
 
 ## Learn by coding
 
-```{r data, warning = FALSE, message = FALSE}
-# Prepare environment ----------------------------------------------------------
+We start by loading a package already implementing the PLS algorithm and some data to test our code.
+We load the `PCovR` package to use the `alexithymia` data.
 
-library(nFactors)
-library(psych)
+```{r prep, warning = FALSE, message = FALSE}
+# Load packages ----------------------------------------------------------------
 
-# Perform PCA
-res <- psych::pca(Harman.5)
+  # load packages
+  library(pls)
+  library(plsdof)
+  library(PCovR)
 
-# Extract eigenvalues
-eigenvalues <- res$values
-
-# Graph
-plotuScree(x = eigenvalues)
-
-# Non-graphical solutions
-ngs <- nScree(x = eigenvalues)
-
-# Kaiser rule\
-nkaiser_man <- sum(eigenvalues > 1)
-
-# Accelration factor
-a <- NULL
-for (j in 2:(length(eigenvalues) - 1)){
-  a[j] <- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
-}
-
-naf_man <- which.max(a) - 1
-
-# Compare results
-data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
-           nFactor = c(naf = ngs$Components[["naf"]],
-                       nkaiser = ngs$Components[["nkaiser"]]))
+  # Load data
+  data(alexithymia)
 
 ```
+
+We can 
 
 ## Degrees of freedom of the residuals
 

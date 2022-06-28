@@ -6,31 +6,33 @@
 
 # Load packages ----------------------------------------------------------------
 
-    # install pls package (if not already installed)
-    install.packages("pls")
-
     # load pls package
     library(pls)
     library(plsdof)
+    library(PCovR)
 
 # Preapre data -----------------------------------------------------------------
 
+        data(alexithymia)
+
     # 1. Select vairables for model
     dt <- cbind(yarn[[2]], yarn[[1]])
+    dim(dt)
 
-    # 2. Scale
+    # 2. Check scales
     # Means
     round(colMeans(dt), 3)
+
+    # Variances
+    round(apply(dt, 2, var), 3)
 
     # 3. Objects needed
     p <- ncol(dt) - 1
     n <- nrow(dt)
-
-    # Variance
-    round(apply(dt, 2, var), 3)
-
-    # center and scale to variance = 1
-    dt_sd <- cbind(yarn[[2]], scale(yarn[[1]]))
+    dt_sd <- cbind(
+        yarn[[2]],
+        scale(yarn[[1]]) # center and scale to variance = 1
+    )
 
     # Checks
     round(colMeans(dt_sd), 3)
@@ -38,14 +40,7 @@
 
 # Estimation -------------------------------------------------------------------
 
-    Xmj <- dt_sd[, -1]
-    y <- dt_sd[, 1]
-    M <- 10 # number of "components"
-    y_hat <- cbind(mean(dt_sd[, 1]), matrix(rep(NA, n * (M - 1)), nrow = n))
-
-    z <- matrix(NA, nrow = n, ncol = M + 1)
-    theta_hat <- rep(NA, M)
-
+    # Helper function
     orthogonalize <- function(vec1, vec2) {
         v <- vec1
         u <- vec2
@@ -55,28 +50,72 @@
         return(newv)
     }
 
+    # Parms
+    M         <- 10 # number of "components"
+    X         <- lapply(1:M, matrix, nrow = n, ncol = p)
+    X[[1]]    <- dt_sd[, -1]
+    y         <- dt_sd[, 1]
+    y_hat     <- cbind(
+        mean(dt_sd[, 1]),
+        matrix(rep(NA, n * (M - 1)), nrow = n)
+    )
+    z         <- matrix(NA, nrow = n, ncol = M)
+    theta_hat <- rep(NA, M)
+
+    # PLS Algorithm following HastieEtAl2017 p 81 (Algorithm 3.3)
     for (m in 2:M) {
         # 2a
-        IP <- matrix(NA, nrow = n, ncol = p)
+        store_2a <- matrix(NA, nrow = n, ncol = p)
         for (j in 1:p) {
-            IP[, j] <- t(Xmj[, j]) %*% y %*% Xmj[, j]
-        }
-        z[, m] <- rowSums(IP)
+            rho_hat_mj <- t(X[[m - 1]][, j]) %*% y
+            store_2a[, j] <- rho_hat_mj %*% X[[m - 1]][, j]
+        }        
+        z[, m] <- rowSums(store_2a)
 
         # 2b
-        theta_hat[m] <- drop(z[, m] %*% y / z[, m] %*% z[, m])
+        theta_hat[m] <- drop(t(z[, m]) %*% y / t(z[, m]) %*% z[, m])
 
         # 2c
         y_hat[, m] <- y_hat[, m - 1] + theta_hat[m] * z[, m]
 
         # 2d orthogonalize all columns
         for (j in 1:p) {
-            Xmj[, j] <- orthogonalize(Xmj[, j], z[, m])
+            X[[m]][, j] <- orthogonalize(X[[m-1]][, j], z[, m])
         }
     }
 
-    # fit PCR model
-    model <- plsr(
+    # PLS Algorithm following MevikWehrens2007 (PLS package)
+    E <- X
+    F <- vector("list", M)
+        F[[1]] <- y
+    T <- matrix(nrow = n, ncol = M)
+    W <- P <- matrix(nrow = p, ncol = M)
+    P <- matrix(nrow = p, ncol = M)
+    Q <- matrix(nrow = 1, ncol = M)
+
+    for (m in 1:M) {
+        # SVD of cross product
+        S <- t(E[[m]]) %*% F[[m]]
+        svdS <- svd(S)
+        w <- drop(svdS$u)
+        q <- drop(svdS$v)
+
+        # Scores
+        t <- E[[m]] %*% w
+        t <- t / drop(sqrt(t(t) %*% t))
+        u <- y * q
+
+        # Weights
+        p <- t(E[[m]]) %*% t
+        q <- t(F[[m]]) %*% t
+        
+        # Deflation
+        E[[m + 1]] <- E[[m]] - t %*% t(p)
+        F[[m + 1]] <- F[[m]] - drop(t %*% t(q))
+    }
+
+    # Fit PCR model w/ pls package
+    pls_fit_pls <- plsr(
         dt[, 1] ~ dt[, -1],
         ncomp = M,
         scale = FALSE,
@@ -85,9 +124,16 @@
         validation = "none"
     )
 
-    round(as.data.frame(fitted(model)), 3)
+    # Fit PCR model w/ plsdof package
+    pls_fit_plsdof <- pls.model(X[[1]], y)
 
-    round(y_hat, 3)
+    # Copmare y_hats
+    m <- 2
+    data.frame(
+        pls = round(as.data.frame(fitted(pls_fit_pls)), 3)[, m],
+        plsdof = round(pls_fit_plsdof$Yhat, 3)[, m],
+        man = round(y_hat, 3)[, m]
+    )
 
 # Types of DVs -----------------------------------------------------------------
 
@@ -109,7 +155,8 @@
 
     dim()
 
-    my.pls1 <- pls.model(X, y, m = 5, compute.DoF = TRUE)
+    my.pls1 <- pls.model(X, y)
+    
     my.pls1
 
-    my.pls1$DoF
+    

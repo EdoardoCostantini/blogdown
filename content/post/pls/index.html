@@ -27,82 +27,82 @@ toc: true
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>Describe PLS theory</p>
-<p>Report Algorithm 3.3 p.103 as in HastieEtAl2017 - The Elements of Statistical Learning</p>
+<p>Many data analysts face the problem of analyzing data sets with many, often highly correlated, variables.
+Partial Least Square Regression (PLSR) is a regression method that uses linear combinations of the original predictors to reduce their dimensionality.
+As principal component regression, PLS uses derived inputs, however, it differs from PCR by how the linear combinations are constructed.</p>
+<p>Given a set of predictors <span class="math inline">\(X_{n \times p}\)</span> and a vector of dependent variable scores <span class="math inline">\(y_{n \times 1}\)</span>, the least-square solution for the multiple linear regression</p>
+<p><span class="math display">\[
+y = X \beta + \epsilon\text{, with } \epsilon \sim N(0, \sigma^2)
+\]</span></p>
+<p>is</p>
+<p><span class="math display">\[
+\beta = (X&#39;X)^{-1}X&#39;y
+\]</span></p>
+<p>where <span class="math inline">\(X&#39;\)</span> is the transpose of the data matrix <span class="math inline">\(X\)</span>, and <span class="math inline">\(()^{-1}\)</span> is the matrix inverse.
+When collinearity is present in <span class="math inline">\(X\)</span> or <span class="math inline">\(p &gt; n\)</span>, then <span class="math inline">\(X&#39;X\)</span> is singular and its inverse cannot be computed.
+Derived input regression methods like PCR and PLSR bypass this problem by taking linear combinations of the columns of the original <span class="math inline">\(X\)</span> and regressing <span class="math inline">\(Y\)</span> on just a few of these linear combinations.
+The peculiarity of PLSR is that it includes information on both <span class="math inline">\(X\)</span> and <span class="math inline">\(Y\)</span> in the definition of the linear combinations.
+In this post, we look at two algorithms to estimate PLSR to get a better understanding of the method.</p>
+<div id="popular-algorithms-to-implement-pls" class="section level3">
+<h3>Popular algorithms to implement PLS</h3>
+<p>Here, I describe informally the algorithm steps:</p>
+<ol style="list-style-type: decimal">
+<li>Preprocessing the data - the columns of the input matrix <span class="math inline">\(X\)</span> are standardized to have mean 0 and variance 1.</li>
+<li>The cross-product of every column of <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> is computed: <span class="math inline">\(\rho_{1j} = x_{j}&#39; y\)</span> for <span class="math inline">\(j = 1, \dots, p\)</span>.</li>
+<li>Compute the first partial-least-square direction <span class="math inline">\(z_1\)</span> - The cross-products <span class="math inline">\(\rho_{1j}\)</span> are used as weights to obtain a linear combination of the columns: <span class="math inline">\(z_1 = \sum \rho_{1j} x_{j}\)</span>. This implies that the contribution of each column to <span class="math inline">\(z_1\)</span> is weighted by their univariate relationship with the dependent variable <span class="math inline">\(y\)</span>.</li>
+<li>Regression of <span class="math inline">\(y\)</span> on <span class="math inline">\(z_1\)</span> - The outcome variable <span class="math inline">\(y\)</span> is regressed on this first direction <span class="math inline">\(z_1\)</span> to obtain <span class="math inline">\(\hat{\theta}_1\)</span>.</li>
+<li>Orthogonalization of <span class="math inline">\(X\)</span> - All columns of <span class="math inline">\(X\)</span> are orthogonalized with respect to <span class="math inline">\(z_1\)</span>.</li>
+<li>The cross-product of every column of <span class="math inline">\(X\)</span> and <span class="math inline">\(y\)</span> is computed again: <span class="math inline">\(\rho_{2j} = x_{j}&#39; y\)</span> for <span class="math inline">\(j = 1, \dots, p\)</span>.</li>
+<li>Compute the second partial-least-square direction <span class="math inline">\(z_2\)</span> - The cross-products <span class="math inline">\(\rho_{2j}\)</span> are used as weights to obtain a linear combination of the columns: <span class="math inline">\(z_2 = \sum \rho_{2j} x_{j}\)</span>. Notice that the columns <span class="math inline">\(x_j\)</span> we are using now are orthogonal to the previous partial least square direction <span class="math inline">\(z_1\)</span>.</li>
+<li>Regression of <span class="math inline">\(y\)</span> on <span class="math inline">\(z_2\)</span> - The outcome variable <span class="math inline">\(y\)</span> is regressed on the second direction <span class="math inline">\(z_2\)</span> to obtain <span class="math inline">\(\hat{\theta}_2\)</span>.</li>
+<li>Orthogonalization of <span class="math inline">\(X\)</span> - All columns of <span class="math inline">\(X\)</span> are orthogonalized with respect to <span class="math inline">\(z_2\)</span>.</li>
+</ol>
+<p>The procedure continues until <span class="math inline">\(M\)</span> partial least square directions have been computed.
+The result is a set of independent directions that have both high variance and high correlation with the dependent variable, in contrast to PCR which finds a set of independent directions that have high variance.</p>
+<p>Now we report pseudo-code for the implementation of the PLS algorithm (inspired by Report Algorithm 3.3 p.103 as in HastieEtAl2017).
+We will use it to write the R code in the next session.</p>
+<ol style="list-style-type: decimal">
+<li>Standardized each <span class="math inline">\(x_j\)</span> to have mean 0 and variance 1</li>
+<li>Set:
+<ul>
+<li><span class="math inline">\(\hat{y}^{(0)} = \bar{y}1\)</span></li>
+<li><span class="math inline">\(x_{j}^{(0)} = x_{j}\)</span></li>
+</ul></li>
+<li>For <span class="math inline">\(m = 1, 2, \dots, M\)</span>
+<ol style="list-style-type: lower-alpha">
+<li><span class="math inline">\(z_m = \sum_{j = 1}^{p} \rho_{mj}x_{j}^{(m-1)}\)</span></li>
+<li><span class="math inline">\(\hat{\theta}_m = \frac{z_m&#39;y}{z_m&#39; z_m}\)</span></li>
+<li><span class="math inline">\(\hat{y}^{(m)} = \hat{y}^{(m-1)} + \hat{\theta}_m z_m\)</span></li>
+<li>for <span class="math inline">\(j = 1, \dots, p\)</span> orthogonalize <span class="math inline">\(x_{j}\)</span> with respect to <span class="math inline">\(z_m\)</span>: <span class="math inline">\(x_{j}^{(m)} = x_{j}^{(m-1)} - \frac{z_m&#39; x_{j}^{(m)}}{z_m&#39; z_m}z_m\)</span></li>
+</ol></li>
+<li>Output the sequence of fitted vectors <span class="math inline">\(\hat{y}^{m}\)</span></li>
+</ol>
+</div>
 </div>
 <div id="learn-by-coding" class="section level2">
 <h2>Learn by coding</h2>
-<pre class="r"><code># Prepare environment ----------------------------------------------------------
+<p>We start by loading a package already implementing the PLS algorithm and some data to test our code.</p>
+<pre class="r"><code># Load packages ----------------------------------------------------------------
 
-library(nFactors)
-library(psych)
-
-# Perform PCA
-res &lt;- psych::pca(Harman.5)
-
-# Extract eigenvalues
-eigenvalues &lt;- res$values
-
-# Graph
-plotuScree(x = eigenvalues)</code></pre>
-<p><img src="{{< blogdown/postref >}}index_files/figure-html/data-1.png" width="672" /></p>
-<pre class="r"><code># Non-graphical solutions
-ngs &lt;- nScree(x = eigenvalues)
-
-# Kaiser rule\
-nkaiser_man &lt;- sum(eigenvalues &gt; 1)
-
-# Accelration factor
-a &lt;- NULL
-for (j in 2:(length(eigenvalues) - 1)){
-  a[j] &lt;- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
-}
-
-naf_man &lt;- which.max(a) - 1
-
-# Compare results
-data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
-           nFactor = c(naf = ngs$Components[[&quot;naf&quot;]],
-                       nkaiser = ngs$Components[[&quot;nkaiser&quot;]]))</code></pre>
-<pre><code>##         manual nFactor
-## naf          2       2
-## nkaiser      2       2</code></pre>
+    # load pls package
+    library(pls)
+    library(pls)
+    library(plsdof)
+?pcovr</code></pre>
+<pre><code>## No documentation for &#39;pcovr&#39; in specified packages and libraries:
+## you could try &#39;??pcovr&#39;</code></pre>
+<p>We can</p>
 </div>
 <div id="degrees-of-freedom-of-the-residuals" class="section level2">
 <h2>Degrees of freedom of the residuals</h2>
 </div>
 <div id="tldr-just-give-me-the-code" class="section level2">
 <h2>TL;DR, just give me the code!</h2>
-<pre class="r"><code># Prepare environment ----------------------------------------------------------
+<pre class="r"><code># Load packages ----------------------------------------------------------------
 
-library(nFactors)
-library(psych)
-
-# Perform PCA
-res &lt;- psych::pca(Harman.5)
-
-# Extract eigenvalues
-eigenvalues &lt;- res$values
-
-# Graph
-plotuScree(x = eigenvalues)
-
-# Non-graphical solutions
-ngs &lt;- nScree(x = eigenvalues)
-
-# Kaiser rule\
-nkaiser_man &lt;- sum(eigenvalues &gt; 1)
-
-# Accelration factor
-a &lt;- NULL
-for (j in 2:(length(eigenvalues) - 1)){
-  a[j] &lt;- (eigenvalues[j + 1] - eigenvalues[j]) - (eigenvalues[j] - eigenvalues[j - 1])
-}
-
-naf_man &lt;- which.max(a) - 1
-
-# Compare results
-data.frame(manual = c(naf = naf_man, nkaiser = nkaiser_man),
-           nFactor = c(naf = ngs$Components[[&quot;naf&quot;]],
-                       nkaiser = ngs$Components[[&quot;nkaiser&quot;]]))</code></pre>
+    # load pls package
+    library(pls)
+    library(pls)
+    library(plsdof)
+?pcovr</code></pre>
 </div>

@@ -2,18 +2,20 @@
 # Objective: Partial Least Square ideas
 # Author:    Edoardo Costantini
 # Created:   2022-06-13
-# Modified:  2022-06-24
+# Modified:  2022-06-30
 
-# Load packages ----------------------------------------------------------------
+# Prepare environment ----------------------------------------------------------
 
-    # load pls package
+    # Load packages
     library(pls)
     library(plsdof)
     library(PCovR)
 
-# Preapre data -----------------------------------------------------------------
+    # Load personal funcitons
+    source("./content/post/pls/dfSDI.R")
+    source("./content/post/pls/pls.manual.R")
 
-        data(alexithymia)
+# Preapre data -----------------------------------------------------------------
 
     # 1. Select vairables for model
     dt <- cbind(yarn[[2]], yarn[[1]])
@@ -39,16 +41,6 @@
     round(apply(dt_sd, 2, var), 3)
 
 # Estimation -------------------------------------------------------------------
-
-    # Helper function
-    orthogonalize <- function(vec1, vec2) {
-        v <- vec1
-        u <- vec2
-
-        newv <- v - drop(t(u) %*% v / (t(u) %*% u)) * u
-
-        return(newv)
-    }
 
     # Parms
     M         <- 10 # number of "components"
@@ -145,18 +137,125 @@
 
     cppls.fito
 
+# Prediction -------------------------------------------------------------------
+
+    n <- 50 # number of observations
+    p <- 15 # number of variables
+    X <- matrix(rnorm(n * p), ncol = p)
+    y <- rnorm(n)
+    M <- 10 # number of "components"
+
+    ntest <- 200 #
+    Xtest <- matrix(rnorm(ntest * p), ncol = p) # test data
+    ytest <- rnorm(ntest) # test data
+
+    # Fit alternative PLSs
+    out_pls <- plsr(
+        y ~ X,
+        ncomp = M,
+        scale = TRUE,
+        center = TRUE,
+        method = "oscorespls",
+        validation = "none"
+    )
+    out_plsdof <- pls.model(X, y, compute.DoF = TRUE, Xtest = Xtest, ytest = NULL)
+
+    # Parms
+    Xs <- lapply(1:M, matrix, nrow = n, ncol = p)
+    Xs[[1]] <- X
+    # y         <- dt_sd[, 1]
+    y_hat <- cbind(
+        mean(dt_sd[, 1]),
+        matrix(rep(NA, n * (M - 1)), nrow = n)
+    )
+    z <- matrix(NA, nrow = n, ncol = M)
+    theta_hat <- rep(NA, M)
+    W <- matrix(nrow = ncol(X), ncol = M)
+
+    # PLS Algorithm following HastieEtAl2017 p 81 (Algorithm 3.3)
+    for (m in 2:M) {
+        # 2a
+        store_2a <- matrix(NA, nrow = n, ncol = p)
+        for (j in 1:p) {
+            rho_hat_mj <- t(Xs[[m - 1]][, j]) %*% y
+            store_2a[, j] <- rho_hat_mj %*% Xs[[m - 1]][, j]
+            W[j, m] <- rho_hat_mj
+        }        
+        z[, m] <- rowSums(store_2a)
+
+        # 2b
+        theta_hat[m] <- drop(t(z[, m]) %*% y / t(z[, m]) %*% z[, m])
+
+        # 2c
+        y_hat[, m] <- y_hat[, m - 1] + theta_hat[m] * z[, m]
+
+        # 2d orthogonalize all columns
+        for (j in 1:p) {
+            Xs[[m]][, j] <- orthogonalize(Xs[[m-1]][, j], z[, m])
+        }
+    }
+    # Determine regression coefficients
+    L <- t(z[, 2:M]) %*% X %*% W[, 2:M]
+    sxi <- apply(X, 2, sd)
+    D <- diag(1 / sxi)
+    Bmh <- D %*% W[, 2:M] %*% solve(L) %*% t(z[, 2:M]) %*% y
+
+    cbind(
+        plsdof = out_plsdof$coefficients[, M],
+        manual = Bmh
+    )
+
+    out_plsdof$coefficients[, 10]
+    # Obtain predictions on new data
+    round(
+        cbind(
+            PLS = predict(out_pls, newdata = Xtest)[, , M],
+            PLSdof = out_plsdof$prediction[, M]
+        ), 5
+    )
+
 # PLS degrees of freedom -------------------------------------------------------
 
     library(plsdof)
+    set.seed(1234)
 
-    data(Boston)
-    X <- as.matrix(Boston[, -14])
-    y <- as.vector(Boston[, 14])
+    # Generate data data
+    n <- 100 # number of observations
+    p <- 15 # number of variables
+    m <- 15
+    X <- matrix(rnorm(n * p), ncol = p)
+    y <- rnorm(n)
 
-    dim()
+    # Fit model with package
+    outpls <- pls.model(X, y, compute.DoF = TRUE)
+    outpls.internal <- linear.pls.fit(X, y, m, DoF.max = DoF.max)
+    outpls$DoF
 
-    my.pls1 <- pls.model(X, y)
-    
-    my.pls1
+    # Fit model with person PLS function
+    outpls_man <- pls.manual(ivs = X, dv = y, m = m)
 
-    
+    # Y hats
+    round(outpls_man$Yhat - outpls$Yhat, 5)
+
+    # T scores
+    j <- 1
+    cbind(
+        PLSTT = pls.object$TT[, j],
+        manualTs = outpls_man$Ts[, j],
+        manualTsn = outpls_man$Tsn[, j]
+    )
+
+    # Degrees of freedom
+    DoF_manual <- dofPLS(
+        X,
+        y,
+        TT = outpls_man$Tsn,
+        Yhat = outpls_man$Yhat[, 2:(m + 1)],
+        DoF.max = m + 1
+    )
+
+    cbind(
+        PLS = outpls$DoF,
+        PLS.manual = DoF_manual,
+        diff = round(outpls$DoF - DoF_manual, 5)
+    )

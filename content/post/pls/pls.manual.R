@@ -20,6 +20,7 @@ pls.manual <- function(ivs, dv, m = 1L){
     )
     z         <- matrix(NA, nrow = n, ncol = M)
     theta_hat <- rep(NA, M)
+    W <- matrix(nrow = ncol(ivs), ncol = M)
 
     # PLS Algorithm following HastieEtAl2017 p 81 (Algorithm 3.3)
     for (m in 2:M) {
@@ -27,8 +28,9 @@ pls.manual <- function(ivs, dv, m = 1L){
         store_2a <- matrix(NA, nrow = n, ncol = p)
         for (j in 1:p) {
             rho_hat_mj <- t(X[[m - 1]][, j]) %*% y
-            store_2a[, j] <- drop(rho_hat_mj %*% X[[m - 1]][, j])
-        }        
+            store_2a[, j] <- rho_hat_mj %*% X[[m - 1]][, j]
+            W[j, m] <- rho_hat_mj
+        }
         z[, m] <- rowSums(store_2a)
 
         # 2b
@@ -51,7 +53,8 @@ pls.manual <- function(ivs, dv, m = 1L){
         list(
             Ts = z[, -1],
             Tsn = Tsn,
-            Yhat = y_hat
+            Yhat = y_hat,
+            W = W[, -1]
         )
     )
 

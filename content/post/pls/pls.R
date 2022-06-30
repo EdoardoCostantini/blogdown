@@ -160,52 +160,9 @@
     )
     out_plsdof <- pls.model(X, y, compute.DoF = TRUE, Xtest = Xtest, ytest = NULL)
 
-    # Parms
-    Xs <- lapply(1:M, matrix, nrow = n, ncol = p)
-    Xs[[1]] <- X
-    # y         <- dt_sd[, 1]
-    y_hat <- cbind(
-        mean(dt_sd[, 1]),
-        matrix(rep(NA, n * (M - 1)), nrow = n)
-    )
-    z <- matrix(NA, nrow = n, ncol = M)
-    theta_hat <- rep(NA, M)
-    W <- matrix(nrow = ncol(X), ncol = M)
+    # Manual fit
+    outpls_man <- pls.manual(ivs = X, dv = y, m = M)
 
-    # PLS Algorithm following HastieEtAl2017 p 81 (Algorithm 3.3)
-    for (m in 2:M) {
-        # 2a
-        store_2a <- matrix(NA, nrow = n, ncol = p)
-        for (j in 1:p) {
-            rho_hat_mj <- t(Xs[[m - 1]][, j]) %*% y
-            store_2a[, j] <- rho_hat_mj %*% Xs[[m - 1]][, j]
-            W[j, m] <- rho_hat_mj
-        }        
-        z[, m] <- rowSums(store_2a)
-
-        # 2b
-        theta_hat[m] <- drop(t(z[, m]) %*% y / t(z[, m]) %*% z[, m])
-
-        # 2c
-        y_hat[, m] <- y_hat[, m - 1] + theta_hat[m] * z[, m]
-
-        # 2d orthogonalize all columns
-        for (j in 1:p) {
-            Xs[[m]][, j] <- orthogonalize(Xs[[m-1]][, j], z[, m])
-        }
-    }
-    # Determine regression coefficients
-    L <- t(z[, 2:M]) %*% X %*% W[, 2:M]
-    sxi <- apply(X, 2, sd)
-    D <- diag(1 / sxi)
-    Bmh <- D %*% W[, 2:M] %*% solve(L) %*% t(z[, 2:M]) %*% y
-
-    cbind(
-        plsdof = out_plsdof$coefficients[, M],
-        manual = Bmh
-    )
-
-    out_plsdof$coefficients[, 10]
     # Obtain predictions on new data
     round(
         cbind(

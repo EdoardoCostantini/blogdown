@@ -1,8 +1,8 @@
-# Project:   knowledgeBase
+# Project:   blogdown
 # Objective: Explore a simple case of EM algorithm with missing values
 # Author:    Edoardo Costantini
 # Created:   2021-11-17
-# Modified:  2022-04-05
+# Modified:  2022-07-04
 # Notion:
 # Other ref:
 
@@ -11,6 +11,7 @@ rm(list = ls())
 # Packages ----------------------------------------------------------------
 
   library(mvtnorm)           # for likelihood functions
+  library(norm)              # for alternative EM implementation
   library(ISR3)              # for SWP functions
   library(fastmatrix)        # alternative sweep
   library(mice)              # for NA pattern assesment
@@ -103,21 +104,51 @@ rm(list = ls())
   theta0[-1,-1] <- cov(Y, use = "pairwise.complete.obs") * (n - 1)/n # T2 CC
 
   # Run function
+
+  # Manual slow
   theta_hat <- emSchafer(Y = Y, iters = 500, theta0 = theta0)
+
+  # Manual fast
   theta_hat_f <- emFast(Y = Y, iters = 500, theta0 = theta0)
+  
+  # norm package version
+  s <- prelim.norm(Y)     # do preliminary manipulations
+  thetahat <- em.norm(s, maxits = 500) # compute mle
+  getparam.norm(s, thetahat, corr = TRUE)$r
+  getparam.norm(s, thetahat)$mu
+  getparam.norm(s, thetahat, corr = TRUE)$sdv
 
   # Assess results
-  theta0
-  round(theta_hat[1, ], 3)             # means
-  round(sqrt(diag(theta_hat)[-1]), 3)  # standard deviations
-  round(theta_hat[-1, -1], 3)          # covariance matrix
-  round(cov2cor(theta_hat[-1, -1]), 3) # correlation matrix
+
+  # Means
+  data.frame(
+    cc = colMeans(Y, na.rm = TRUE),
+    Schafer = drop(theta_hat[1, -1]),
+    Fast = drop(theta_hat_f[1, -1]),
+    em.norm = getparam.norm(s, thetahat)$mu
+  )
+
+  # Standard deviations
+    data.frame(
+      cc = apply(Y, 2, sd, na.rm = TRUE),
+      Schafer = sqrt(diag(theta_hat)[-1]),
+      Fast = sqrt(diag(theta_hat_f)[-1]),
+      em.norm = getparam.norm(s, thetahat, corr = TRUE)$sd
+    )
+
+  # Covariance matrix
+  round(theta_hat_f[-1, -1] - theta_hat[-1, -1], 3)
+  round(theta_hat[-1, -1] - getparam.norm(s, thetahat)$sigma, 3)
+  theta0[-1, -1] - getparam.norm(s, thetahat)$sigma
+
+  # Correlation
+  round(cov2cor(theta_hat[-1, -1]) - getparam.norm(s, thetahat, corr = TRUE)$r, 3)
 
   # Compare speed
-  round(theta_hat - theta_hat, 3)      # same results
   benchmark(
     "Scahfer" = { emSchafer(Y = Y, iters = 500, theta0 = theta0) },
-    "Better R code" = { emFast(Y = Y, iters = 500, theta0 = theta0) },
+    "Fast" = { emFast(Y = Y, iters = 500, theta0 = theta0) },
+    "em.norm" = { em.norm(s, maxits = 500) },
     replications = 10,
     columns = c("test", "replications", "elapsed",
                 "relative", "user.self", "sys.self")

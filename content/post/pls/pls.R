@@ -2,7 +2,7 @@
 # Objective: Partial Least Square ideas
 # Author:    Edoardo Costantini
 # Created:   2022-06-13
-# Modified:  2022-06-30
+# Modified:  2022-07-05
 
 # Prepare environment ----------------------------------------------------------
 
@@ -185,8 +185,8 @@
 
     # Fit model with package
     outpls <- pls.model(X, y, compute.DoF = TRUE)
-    outpls.internal <- linear.pls.fit(X, y, m, DoF.max = DoF.max)
     outpls$DoF
+    outpls.internal <- linear.pls.fit(X, y, m, DoF.max = min(n - 1, p + 1))
 
     # Fit model with person PLS function
     outpls_man <- pls.manual(ivs = X, dv = y, m = m)
@@ -197,7 +197,7 @@
     # T scores
     j <- 1
     cbind(
-        PLSTT = pls.object$TT[, j],
+        PLSTT = outpls.internal$TT[, j],
         manualTs = outpls_man$Ts[, j],
         manualTsn = outpls_man$Tsn[, j]
     )

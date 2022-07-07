@@ -698,74 +698,17 @@ ordLoad <- function(x) x[, order(x[1, ])]
 
 # Other experiments ------------------------------------------------------------
 
-t(t(Y_m[, 1:p_o]) - muo)
-Y_m[18, 1:p_o] - muo
-
   # Constants
   a <- Ybar <- colMeans(Y)
   R <- diag(q)
   S_i <- 1:q
-  # Cyy <- 1/(n-1) * t(Y - Ybar) %*% (Y - Ybar) # if data is centered, Cyy which is Sxb
-  # Ys <- scale(Y)
-  # Cyy <- 1/(n-1) * t(Ys) %*% (Ys) # if we want to work with correlation matrix
 
   # Initialize
   B <- B0 <- matrix(.5, nrow = q, ncol = p)
   Sigma <- Sigma0 <- diag(1, p)
 
-  # E step estiamtes ---------------------------------------------------------
-  # Covariance matrix
-  cov_mat <- rbind(
-    cbind(t(B) %*% R %*% B + Sigma, t(B) %*% R),
-    cbind(R %*% B, R)
-  )
-
-  # Augmented covariance matrix
-  Theta <- augmentCov(
-    covmat = cov_mat,
-    center = c(a, rep(0, q)),
-    dnames = NULL
-  )
-
-  for (s in 1:S) {
-    id_obs  <- I[[s]]
-    dat_aug <- as.matrix(cbind(int = 1, Y[id_obs, , drop = FALSE]))
-    Tobs_s[[s]] <- crossprod(dat_aug)
-
-    # Fix NAs
-    Tobs_s[[s]][is.na(Tobs_s[[s]])] <- 0
-  }
-
-  Tobs <- Reduce("+", Tobs_s)
-
-  # Constants
-  a <- Ybar <- colMeans(Y)
-  R <- diag(q)
-  S_i <- 1:q
-  Cyy <- 1/(n-1) * t(Y - Ybar) %*% (Y - Ybar) # if data is centered, Cyy which is Sxb
-  # Ys <- scale(Y)
-  # Cyy <- 1/(n-1) * t(Ys) %*% (Ys) # if we want to work with correlation matrix
-
-  # Initialize
-  Phi <- diag(q)
-  L <- L0 <- matrix(.5, nrow = p, ncol = q)
-  Psi <- Psi0 <- diag(1, p)
-  Sigma <- L %*% Phi %*% t(L) + Psi
-
-  for (s in 1:S) {
-    s <- 1
-    id_obs  <- I[[s]]
-    L[O[[s]], ]
-    dat_aug <- as.matrix(cbind(int = 1, Y[id_obs, , drop = FALSE]))
-    Tobs_s[[s]] <- crossprod(dat_aug)
-
-    # Fix NAs
-    Tobs_s[[s]][is.na(Tobs_s[[s]])] <- 0
-  }
-
-
   # EM
-  for (i in 1:1e3){
+  for (i in 1:1e3) {
 
     # E step estiamtes ---------------------------------------------------------
     # Matrix
@@ -794,13 +737,10 @@ Y_m[18, 1:p_o] - muo
     m_matrix_swept <- sweepGoodnight(m_matrix, target = S_i + p)
 
     # Updates
-    B <- m_matrix_swept[-c(1:p), 1:p]
+    B <- m_matrix_swept[-c(1:p), 1:p, drop = FALSE]
     Sigma <- diag(diag(m_matrix_swept[1:p, 1:p]))
   }
 
-  # Loadings
-  lapply(list(
-    RFA = loadings(psych_fa)[, c(2,3,1)],
-    MN2016 = varimax(Lambda)$loadings[],
-    LR1982 = varimax(t(B))$loadings[, c(1, 3, 2)]
-  ), round, 3)
+  # Store outputs
+  loads_LR1982 <- ordLoad(varimax(t(B))$loadings[])
+  uniqs_LR1982 <- diag(Sigma)

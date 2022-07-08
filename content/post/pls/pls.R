@@ -2,7 +2,7 @@
 # Objective: Partial Least Square ideas
 # Author:    Edoardo Costantini
 # Created:   2022-06-13
-# Modified:  2022-07-05
+# Modified:  2022-07-08
 
 # Prepare environment ----------------------------------------------------------
 
@@ -191,18 +191,41 @@
     # Fit model with person PLS function
     outpls_man <- pls.manual(ivs = X, dv = y, m = m)
 
+    # Fit model with plsr function from pls
+    pls_fit_pls <- plsr(
+        y ~ X,
+        ncomp = m,
+        scale = FALSE,
+        center = FALSE,
+        method = "oscorespls",
+        validation = "none"
+    )
+
     # Y hats
     round(outpls_man$Yhat - outpls$Yhat, 5)
 
     # T scores
     j <- 1
     cbind(
+        PLSR = apply(scores(pls_fit_pls), 2, function(j) j / sqrt(sum(j^2)))[, j],
         PLSTT = outpls.internal$TT[, j],
         manualTs = outpls_man$Ts[, j],
         manualTsn = outpls_man$Tsn[, j]
     )
 
-    # Degrees of freedom
+    # Degrees of freedom PLSR
+    predi <- sapply(1:m, function(j) {
+        predict(pls_fit_pls, ncomp = j)
+    })
+    DoF_plsr <- dofPLS(
+        X,
+        y,
+        TT = apply(scores(pls_fit_pls), 2, function(j) j / sqrt(sum(j^2))),
+        Yhat = predi,
+        DoF.max = m + 1
+    )
+
+    # Degrees of freedom manual
     DoF_manual <- dofPLS(
         X,
         y,
@@ -211,8 +234,10 @@
         DoF.max = m + 1
     )
 
+    # Compare degrees of freedom
     cbind(
-        PLS = outpls$DoF,
+        PLSR = DoF_plsr,
+        PLSdof = outpls$DoF,
         PLS.manual = DoF_manual,
         diff = round(outpls$DoF - DoF_manual, 5)
     )

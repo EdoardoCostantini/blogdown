@@ -70,28 +70,20 @@ dofPLS <- function(X, y, TT, Yhat, m = ncol(X), DoF.max = ncol(X) + 1){
 
 # Extract single factor --------------------------------------------------------
 
-DoF_manual <- dofPLS(
-   X = scale(mtcars[, -1]),
-   y = mtcars[, 1],
-   m = ncol(X),
-   DoF.max = m + 1,
-   TT = linear.pls.fit(X, y, m, DoF.max = DoF.max)$TT, # normalizezs PC scores
-   Yhat = linear.pls.fit(X, y, m, DoF.max = DoF.max)$Yhat[, 2:(m + 1)]
-)
-DoF_manual
-
-dofPLS_single <- function(X, y, TT, Yhat, m = ncol(X), DoF.max = ncol(X) + 1, q = 1){
+dofPLS_single <- function(X, y, q = 1, TT, Yhat){
     # Example inputs
     # X = scale(mtcars[, -1])
     # y = mtcars[, 1]
     # m = ncol(X)
     # DoF.max = m + 1
     # TT <- linear.pls.fit(X, y, m, DoF.max = DoF.max)$TT # normalizezs PC scores
-    # q <- 3 # I only want the thrid one
+    # q <- 3 # desired component / latent variable
     # Yhat <- linear.pls.fit(X, y, m, DoF.max = DoF.max)$Yhat[, (q + 1)]
 
     # Body
     n <- nrow(X)
+    m <- ncol(X)
+    DoF.max <- ncol(X) + 1
 
     # Scale data
     mean.X <- apply(X, 2, mean)
@@ -117,9 +109,9 @@ dofPLS_single <- function(X, y, TT, Yhat, m = ncol(X), DoF.max = ncol(X) + 1, q 
     Binv <- backsolve(BB, diag(m))
     tkt <- 0
     ykv <- 0
-    KjT <- array(dim = c(m, n, m))
+    KjT <- array(dim = c(q, n, m))
     dummy <- TT
-    for (i in 1:m) {
+    for (i in 1:q) {
         dummy <- K %*% dummy
         KjT[i, , ] <- dummy
     }

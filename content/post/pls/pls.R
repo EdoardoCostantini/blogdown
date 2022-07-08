@@ -235,13 +235,12 @@
     )
 
     # Single DoF
-    DoF_single <- c(1, sapply(1:(m), function(i) {
+    DoF_single <- c(1, sapply(1:m, function(i) {
         dofPLS_single(
             X,
             y,
             TT = outpls_man$Tsn,
-            Yhat = outpls_man$Yhat[, 2:(m + 1)],
-            DoF.max = m + 1,
+            Yhat = outpls_man$Yhat[, (i + 1)],
             q = i
         )
     }))

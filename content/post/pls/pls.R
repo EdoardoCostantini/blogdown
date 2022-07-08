@@ -234,10 +234,23 @@
         DoF.max = m + 1
     )
 
+    # Single DoF
+    DoF_single <- c(1, sapply(1:(m), function(i) {
+        dofPLS_single(
+            X,
+            y,
+            TT = outpls_man$Tsn,
+            Yhat = outpls_man$Yhat[, 2:(m + 1)],
+            DoF.max = m + 1,
+            q = i
+        )
+    }))
+
     # Compare degrees of freedom
     cbind(
         PLSR = DoF_plsr,
         PLSdof = outpls$DoF,
-        PLS.manual = DoF_manual,
-        diff = round(outpls$DoF - DoF_manual, 5)
+        PLS_manual = DoF_manual,
+        diff = round(outpls$DoF - DoF_manual, 5),
+        DoF_single = DoF_single
     )

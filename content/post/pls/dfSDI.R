@@ -78,6 +78,7 @@ DoF_manual <- dofPLS(
    TT = linear.pls.fit(X, y, m, DoF.max = DoF.max)$TT, # normalizezs PC scores
    Yhat = linear.pls.fit(X, y, m, DoF.max = DoF.max)$Yhat[, 2:(m + 1)]
 )
+DoF_manual
 
 dofPLS_single <- function(X, y, TT, Yhat, m = ncol(X), DoF.max = ncol(X) + 1, q = 1){
     # Example inputs
@@ -86,8 +87,8 @@ dofPLS_single <- function(X, y, TT, Yhat, m = ncol(X), DoF.max = ncol(X) + 1, q 
     # m = ncol(X)
     # DoF.max = m + 1
     # TT <- linear.pls.fit(X, y, m, DoF.max = DoF.max)$TT # normalizezs PC scores
-    # Yhat <- linear.pls.fit(X, y, m, DoF.max = DoF.max)$Yhat[, 2:(m + 1)]
-    # q <- 5 # I only want the thrid one
+    # q <- 3 # I only want the thrid one
+    # Yhat <- linear.pls.fit(X, y, m, DoF.max = DoF.max)$Yhat[, (q + 1)]
 
     # Body
     n <- nrow(X)
@@ -128,7 +129,7 @@ dofPLS_single <- function(X, y, TT, Yhat, m = ncol(X), DoF.max = ncol(X) + 1, q 
     ci <- Binvi %*% b[1:q]
     Vi <- TT[, 1:q, drop = FALSE] %*% t(Binvi)
     trace.term <- sum(ci * tr.K[1:q])
-    ri <- y - Yhat[, q]
+    ri <- y - Yhat
     for (j in 1:q) {
         KjTj <- KjT[j, , ]
         tkt <- tkt + ci[j] * tr(t(TT[, 1:q, drop = FALSE]) %*%

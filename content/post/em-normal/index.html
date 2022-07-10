@@ -1,9 +1,9 @@
 ---
-title: Using the EM algorithm
+title: Using the EM algorithm for missing data analysis
 author: Edoardo Costantini
 draft: true
 date: '2021-11-19'
-slug: sweep
+slug: em-algorithm-missing-data
 categories: ["The EM algorithm"]
 tags: ["statistics", "regression", "missing values"]
 subtitle: 'Series: The EM algorithm - Part 2'
@@ -28,8 +28,11 @@ output:
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
-<li><a href="#learn-by-coding"><span class="toc-section-number">2</span> Learn by coding</a></li>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a>
+<ul>
+<li><a href="#review-likelihood-concepts"><span class="toc-section-number">1.1</span> Review likelihood concepts</a></li>
+</ul></li>
+<li><a href="#the-em-algorithm"><span class="toc-section-number">2</span> The EM algorithm</a></li>
 <li><a href="#tldr-just-give-me-the-code"><span class="toc-section-number">3</span> TL;DR, just give me the code!</a></li>
 <li><a href="#references">References</a></li>
 </ul>
@@ -37,21 +40,70 @@ output:
 
 <div id="introduction" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Introduction</h1>
-<p>The EM algorithm was described in -LINK TO OTHER POST-
-We will use the sweep operator described in -LINK TO OTHER POST-</p>
-<p>Little and Rubin <span class="citation">(<a href="#ref-littleRubin:2002" role="doc-biblioref">2002, p148</a>)</span> defined it as follows:</p>
+<p>The <a href="https://en.wikipedia.org/wiki/Expectation–maximization_algorithm">Expectation-Maximization (EM)</a> algorithm is an iterative procedure that can be used to obtain maximum likelihood estimates (MLE) for a variety of statistical models.
+It can be used to estimate the parameters of factor analysis models or to estimate the covariance matrix of a collection of variables assumed to come from a normal distribution.
+In this post, I want to briefly describe a code implementation of the EM algorithm used for this latter purpose.
+For a formal presentation of the algorithm, I recommend reading Schafer <span class="citation">(<a href="#ref-schafer:1997" role="doc-biblioref">1997</a>, ch 5.3.3)</span> or Little and Rubin <span class="citation">(<a href="#ref-littleRubin:2002" role="doc-biblioref">2002, 168</a>)</span>.</p>
+<div id="review-likelihood-concepts" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> Review likelihood concepts</h2>
+<p>Before getting to the EM algorithm is important to review a few concepts related to maximum likelihood estimation.
+The EM algorithm aims to obtain the MLE estimates of some model parameters.
+So first, it is important to make sure you understand what maximum likelihood estimation is.
+First of all, let’s clarify what we mean when we say likelihood.</p>
+<p>Consider the following complete data (from <span class="citation"><a href="#ref-littleRubin:2002" role="doc-biblioref">Little and Rubin</a> (<a href="#ref-littleRubin:2002" role="doc-biblioref">2002</a>)</span> example 7.7, p. 152):</p>
+<pre class="r"><code># Load Little Rubin data -------------------------------------------------------
+
+# Create data
+Y &lt;- matrix(c(7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10,
+                  26, 29, 56, 31, 52, 55, 71 ,31, 54, 47,40,66,68,
+                  6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8,
+                  60,52, 20, 47, 33, 22,6,44,22,26,34,12,12,
+                  78.5,74.3,104.3,87.6,95.9,109.2,102.7,72.5,93.1,
+                  115.9,83.8,113.3,109.4), ncol = 5)
+                  
+# Store useful information
+  n &lt;- nrow(Y)
+  p &lt;- ncol(Y)</code></pre>
+<p>Every continuous distribution has a probability density function.</p>
+<p>If we assume that this data comes from a <a href="https://en.wikipedia.org/wiki/Multivariate_normal_distribution">multivariate normal distribution</a> (MVN) we are saying that every row was sampled from this normal multivariate normal distribution.
+In math, we would write:</p>
+<p><span class="math display">\[
+Y \sim N(\mathbf{\mu}, \mathbf{\Sigma})
+\]</span></p>
+<p>In such a scenario, the MLE estimate will then try to find the population values of <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\Sigma\)</span> that maximize the chance of observing the data we have observed (<span class="math inline">\(Y\)</span>).
+For a given row of <span class="math inline">\(Y\)</span>, we can compute the relative probability of observing it density by plugging the value in the probability density function of the MVN distribution.</p>
+<p><span class="math display">\[
+det(2 \pi \mathbf{\Sigma})^{-\frac{1}{2}} exp \left(-\frac{1}{2}(y_i - \mu)^T \Sigma^{-1} (y_i - \mu) \right)
+\]</span></p>
 </div>
-<div id="learn-by-coding" class="section level1" number="2">
-<h1><span class="header-section-number">2</span> Learn by coding</h1>
+</div>
+<div id="the-em-algorithm" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> The EM algorithm</h1>
 </div>
 <div id="tldr-just-give-me-the-code" class="section level1" number="3">
 <h1><span class="header-section-number">3</span> TL;DR, just give me the code!</h1>
+<pre class="r"><code># Load Little Rubin data -------------------------------------------------------
+
+# Create data
+Y &lt;- matrix(c(7, 1, 11, 11, 7, 11, 3, 1, 2, 21, 1, 11, 10,
+                  26, 29, 56, 31, 52, 55, 71 ,31, 54, 47,40,66,68,
+                  6, 15, 8, 8, 6, 9, 17, 22, 18, 4, 23, 9, 8,
+                  60,52, 20, 47, 33, 22,6,44,22,26,34,12,12,
+                  78.5,74.3,104.3,87.6,95.9,109.2,102.7,72.5,93.1,
+                  115.9,83.8,113.3,109.4), ncol = 5)
+                  
+# Store useful information
+  n &lt;- nrow(Y)
+  p &lt;- ncol(Y)</code></pre>
 </div>
 <div id="references" class="section level1 unnumbered">
 <h1>References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent">
 <div id="ref-littleRubin:2002" class="csl-entry">
 Little, R. J. A., and D. B. Rubin. 2002. <em>Statistical Analysis with Missing Data</em>. 2nd ed. Hoboken, NJ: Wiley-Interscience.
+</div>
+<div id="ref-schafer:1997" class="csl-entry">
+Schafer, Joseph L. 1997. <em>Analysis of Incomplete Multivariate Data</em>. Vol. 72. Boca Raton, FL: Chapman &amp; Hall/<span>CRC</span>.
 </div>
 </div>
 </div>

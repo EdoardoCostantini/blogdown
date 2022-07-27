@@ -2,8 +2,14 @@
 title: 'Supervised principal component regression imputation in MICE'
 authors:
   - admin
+  - Kyle M. Lang
+  - Klaas Sijtsma
+  - Tim Reeskens
 author_notes:
-  - 'Equal contribution'
+  - 'main author'
+  - 'main advisor'
+  - 'advisor'
+  - 'advisor'
 date: '2022-06-30T00:10:00Z'
 doi: ''
 publishDate: '2017-01-01T00:00:00Z'

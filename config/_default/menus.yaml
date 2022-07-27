@@ -10,24 +10,24 @@ main:
   - name: Digital garden  # A link title for your page.
     url: "post/"  # The URL of your page.
     weight: 10  # The position of your page in the menu.
+  - name: Publications
+    url: 'publication/'
+    weight: 20
 #  - name: Recent Posts
 #    url: '#posts'
 #    weight: 20
 #  - name: Tags
 #    url: '#tags'
 #    weight: 20
-#   - name: Projects
-#     url: '#projects'
-#     weight: 30
-#   - name: Talks
-#     url: '#talks'
-#     weight: 40
-#   - name: Publications
-#     url: '#featured'
-#     weight: 50
-#   - name: Courses
-#     url: courses/
-#     weight: 60
-#   - name: Contact
-#     url: '#contact'
-#     weight: 70
+#  - name: Projects
+#    url: '#projects'
+#    weight: 30
+#  - name: Talks
+#    url: '#talks'
+#    weight: 40
+#  - name: Courses
+#    url: courses/
+#    weight: 60
+#  - name: Contact
+#    url: '#contact'
+#    weight: 70

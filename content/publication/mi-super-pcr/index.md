@@ -15,6 +15,7 @@ summary: This is some summary.
 tags: ["missing values", "imputation"]
 featured: no
 url_pdf: ''
+url_code: 'https://github.com/EdoardoCostantini/mi-spcr'
 url_dataset: ''
 url_poster: ''
 url_project: ''
@@ -27,5 +28,8 @@ projects:
 
 This a preliminary post meant to share the shiny app that can be used to scann the results.
 The article describing the results is coming soon.
+You may find the description of the simulation study in the readme file of the [GitHub](https://github.com/EdoardoCostantini/mi-spcr) repository associated with this study.
+
+### Results dashboard
 
 <iframe height="975" width="100%" frameborder="no" src="https://edoardocostantini.shinyapps.io/mi-pcr-plot/?_ga=2.193807589.95894774.1658930327-1213691852.1658930327"> </iframe>

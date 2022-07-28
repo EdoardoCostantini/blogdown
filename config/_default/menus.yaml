@@ -10,7 +10,7 @@ main:
   - name: Digital garden  # A link title for your page.
     url: "post/"  # The URL of your page.
     weight: 10  # The position of your page in the menu.
-  - name: Publications
+  - name: Research
     url: 'publication/'
     weight: 20
 #  - name: Recent Posts

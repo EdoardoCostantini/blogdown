@@ -142,7 +142,7 @@
     n <- 50 # number of observations
     p <- 15 # number of variables
     X <- matrix(rnorm(n * p), ncol = p)
-    y <- rnorm(n)
+    y <- 100 + rnorm(n)
     M <- 10 # number of "components"
 
     ntest <- 200 #
@@ -169,6 +169,36 @@
             PLS = predict(out_pls, newdata = Xtest)[, , M],
             PLSdof = out_plsdof$prediction[, M]
         ), 5
+    )
+
+    # Make sure scale of predictino is correct
+    out_pls_cF <- plsr(
+      y ~ X,
+      ncomp = M,
+      scale = TRUE,
+      center = FALSE,
+      method = "oscorespls",
+      validation = "none"
+    )
+
+    Xs <- scale(X, center = TRUE, scale = FALSE)
+    ys <- scale(y, center = FALSE, scale = FALSE)
+
+    out_pls_cF <- plsr(
+      ys ~ Xs,
+      ncomp = M,
+      scale = TRUE,
+      center = FALSE,
+      method = "oscorespls",
+      validation = "none"
+    )
+
+    round(
+      cbind(
+        PLS = predict(out_pls, newdata = Xtest)[, , M],
+        PLS_cf = mean(y) + predict(out_pls_cF, newdata = Xtest)[, , M],
+        PLSdof = out_plsdof$prediction[, M]
+      ), 5
     )
 
 # PLS degrees of freedom -------------------------------------------------------

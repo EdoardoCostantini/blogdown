@@ -36,3 +36,10 @@ links:
 projects:
   - phd-research
 ---
+
+### Results dashboard
+
+Here you can explore the results reported in the simulation study. 
+Thanks to this shiny app you can actually check all the additional results that couldn't be included in the main text.
+
+<iframe height="1350" width="100%" frameborder="no" src="https://edoardocostantini.shinyapps.io/shiny-mi-pca-plot/?_ga=2.187725984.929064409.1659041054-1213691852.1658930327"> </iframe>

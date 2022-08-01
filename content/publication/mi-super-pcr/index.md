@@ -40,4 +40,4 @@ You may find the description of the simulation study in the readme file of the [
 
 Thanks to this shiny app you can check all the simulation study conditions in early access.
 
-<iframe height="975" width="100%" frameborder="no" src="https://edoardocostantini.shinyapps.io/mi-pcr-plot/?_ga=2.193807589.95894774.1658930327-1213691852.1658930327"> </iframe>
+<iframe height="1075" width="100%" frameborder="no" src="https://edoardocostantini.shinyapps.io/mi-pcr-plot/?_ga=2.193807589.95894774.1658930327-1213691852.1658930327"> </iframe>

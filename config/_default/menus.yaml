@@ -11,7 +11,7 @@ main:
     url: "post/"  # The URL of your page.
     weight: 10  # The position of your page in the menu.
   - name: Research
-    url: 'publication/'
+    url: 'research/'
     weight: 20
 #  - name: Recent Posts
 #    url: '#posts'

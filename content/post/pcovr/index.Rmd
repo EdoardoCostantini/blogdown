@@ -1,7 +1,42 @@
+---
+title: Principal covariates regression in R
+author: Edoardo Costantini
+date: '2022-08-04'
+slug: pcovr
+categories: ["A primer on PCA", "R notes"]
+tags: ["PCA"]
+subtitle: 'R Code notes on PCovR'
+summary: 'An R script to understand how PCovR works.'
+authors: ["admin"]
+lastmod: '2022-04-02T15:33:01+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+bibliography: references.bib
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+# Introduction
+
+Principal covariates regression is a method to analyze the relationship between sets of multivariate data in the presence of highly-collinear variables.
+Compared to regular principal component regression, principal covariates regression PCovR extracts components that account for much of the variability in a set of $X$ variables and that correlated well with a set of $Y$ variables.
+For more information, I recommend reading [@vervloet2015pcovr, @vervloet2015pcovr] and [@de1992principal, @de1992principal].
+In this post, you can find my R code notes on this method.
+In these notes, I show the computations used by the `PCovR` R-package to perform the method.
+
+# R code notes
+```{r code notes}
 # Set up environment -----------------------------------------------------------
 
     # Load pacakge that implements this method
-    library("PCovR")
+    library("PCovR", verbose = FALSE, quietly = TRUE)
 
     # Load example data from PCovR package
     data(alexithymia)
@@ -31,7 +66,7 @@
 
 # Estimation -------------------------------------------------------------------
 
-    # Estiamte with PCovR function
+    # Estimate with PCovR function
     out <- PCovR::pcovr_est(
         X = X,
         Y = y,
@@ -39,7 +74,7 @@
         r = npcs # fixed number of components
     )
 
-    # Estiamte manually Vervolet version
+    # Estimate manually (Vervolet version)
     Hx <- X %*% solve(t(X) %*% X) %*% t(X)
     G_vv <- alpha * X %*% t(X) / sum(X^2) + (1 - alpha) * Hx %*% y %*% t(y) %*% Hx / sum(y^2)
     EG_vv <- eigen(G_vv) # eigen-decomposition of matrix
@@ -120,3 +155,10 @@
 
     # Compare to one found by package
     pcovr_out$a - alpha_ML
+```
+
+# TL;DR, just give me the code!
+```{r TLDR, ref.label = knitr::all_labels(), echo=TRUE, eval=FALSE}
+```
+
+# References

@@ -1,0 +1,369 @@
+---
+title: Principal covariates regression in R
+author: Edoardo Costantini
+date: '2022-08-04'
+slug: pcovr
+categories: ["A primer on PCA", "R notes"]
+tags: ["PCA"]
+subtitle: 'R Code notes on PCovR'
+summary: 'An R script to understand how PCovR works.'
+authors: ["admin"]
+lastmod: '2022-04-02T15:33:01+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+bibliography: references.bib
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 4
+    number_sections: true
+---
+
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#r-code-notes"><span class="toc-section-number">2</span> R code notes</a></li>
+<li><a href="#tldr-just-give-me-the-code"><span class="toc-section-number">3</span> TL;DR, just give me the code!</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
+<p>Principal covariates regression is a method to analyze the relationship between sets of multivariate data in the presence of highly-collinear variables.
+Compared to regular principal component regression, principal covariates regression PCovR extracts components that account for much of the variability in a set of <span class="math inline">\(X\)</span> variables and that correlated well with a set of <span class="math inline">\(Y\)</span> variables.
+For more information, I recommend reading <span class="citation"><a href="#ref-vervloet2015pcovr" role="doc-biblioref">Vervloet et al.</a> (<a href="#ref-vervloet2015pcovr" role="doc-biblioref">2015</a>)</span> and <span class="citation"><a href="#ref-de1992principal" role="doc-biblioref">De Jong and Kiers</a> (<a href="#ref-de1992principal" role="doc-biblioref">1992</a>)</span>.
+In this post, you can find my R code notes on this method.
+In these notes, I show the computations used by the <code>PCovR</code> R-package to perform the method.</p>
+</div>
+<div id="r-code-notes" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> R code notes</h1>
+<pre class="r"><code># Set up environment -----------------------------------------------------------
+
+    # Load pacakge that implements this method
+    library(&quot;PCovR&quot;, verbose = FALSE, quietly = TRUE)
+
+    # Load example data from PCovR package
+    data(alexithymia)
+
+    # Explore its scale
+    colMeans(alexithymia$X)</code></pre>
+<pre><code>##          confused       right words        sensations          describe 
+##         1.8196721         1.7950820         0.5983607         2.2213115 
+##  analyze problems             upset           puzzled        let happen 
+##         2.5081967         1.6065574         1.1393443         1.2622951 
+##          identify         essential feel about people     describe more 
+##         1.6393443         2.7131148         1.7213115         1.0081967 
+##          going on         why angry  daily activities     entertainment 
+##         0.9836066         1.2540984         1.6639344         1.6967213 
+##   reveal feelings             close            useful   hidden meanings 
+##         1.6475410         2.8442623         2.4672131         1.2131148</code></pre>
+<pre class="r"><code>    colMeans(alexithymia$Y)</code></pre>
+<pre><code>##    CES-D      RSE 
+## 16.46721 31.37295</code></pre>
+<pre class="r"><code>    apply(alexithymia$X, 2, var)</code></pre>
+<pre><code>##          confused       right words        sensations          describe 
+##          1.388701          1.635348          1.151402          1.479542 
+##  analyze problems             upset           puzzled        let happen 
+##          1.161089          1.678634          1.294472          1.302534 
+##          identify         essential feel about people     describe more 
+##          1.620919          1.231066          1.475410          1.363569 
+##          going on         why angry  daily activities     entertainment 
+##          1.470803          1.496884          1.514226          1.601477 
+##   reveal feelings             close            useful   hidden meanings 
+##          2.097886          1.240008          1.193131          1.045116</code></pre>
+<pre class="r"><code>    apply(alexithymia$Y, 2, var)</code></pre>
+<pre><code>##     CES-D       RSE 
+## 118.35016  37.24199</code></pre>
+<pre class="r"><code>    # Subset data
+    X_raw &lt;- alexithymia$X
+    y_raw &lt;- alexithymia$Y[, 1, drop = FALSE]
+
+    # Define paramters that can be useful
+    n &lt;- nrow(X_raw)
+    p &lt;- ncol(X_raw)
+
+    # Scale data
+    X &lt;- scale(X_raw)# * (n - 1) / n
+    y &lt;- scale(y_raw)# * (n - 1) / n
+
+    # Define parameters
+    alpha &lt;- .5 # weighting parameter
+    npcs &lt;- 5
+
+# Estimation -------------------------------------------------------------------
+
+    # Estimate with PCovR function
+    out &lt;- PCovR::pcovr_est(
+        X = X,
+        Y = y,
+        a = alpha,
+        r = npcs # fixed number of components
+    )
+
+    # Estimate manually (Vervolet version)
+    Hx &lt;- X %*% solve(t(X) %*% X) %*% t(X)
+    G_vv &lt;- alpha * X %*% t(X) / sum(X^2) + (1 - alpha) * Hx %*% y %*% t(y) %*% Hx / sum(y^2)
+    EG_vv &lt;- eigen(G_vv) # eigen-decomposition of matrix
+    T_vv &lt;- EG_vv$vectors[, 1:npcs]
+
+# Compare results --------------------------------------------------------------
+
+    # T scores
+    Ts &lt;- list(
+        PCovR = head(out$Te),
+        PCovR_man = head(X %*% out$W),
+        Vervolet = head(T_vv)
+    )
+
+    # Weights
+    W &lt;- list(
+        PCovR = out$W,
+        Vervolet = solve(t(X) %*% X) %*% t(X) %*% T_vv
+    )
+
+    # Px
+    ( t(out$Te) %*% X )[, 1:5]</code></pre>
+<pre><code>##        confused right words sensations   describe analyze problems
+## [1,] -8.4662585  -7.3375812 -2.2012950  6.1597661        0.4271093
+## [2,]  3.3642487  -2.5380829 -0.2684529  4.9595077        6.2443158
+## [3,] -1.4118650  -4.4348404  1.4484525  1.8944371       -3.1435113
+## [4,]  1.1136577   1.0030862  2.0443923 -3.5188316        0.5622115
+## [5,]  0.8172586   0.7913444  5.2341517  0.5130866       -5.2948505</code></pre>
+<pre class="r"><code>    ( t(out$W) %*% t(X) %*% X )[, 1:5]</code></pre>
+<pre><code>##        confused right words sensations   describe analyze problems
+## [1,] -8.4662585  -7.3375812 -2.2012950  6.1597661        0.4271093
+## [2,]  3.3642487  -2.5380829 -0.2684529  4.9595077        6.2443158
+## [3,] -1.4118650  -4.4348404  1.4484525  1.8944371       -3.1435113
+## [4,]  1.1136577   1.0030862  2.0443923 -3.5188316        0.5622115
+## [5,]  0.8172586   0.7913444  5.2341517  0.5130866       -5.2948505</code></pre>
+<pre class="r"><code>    out$Px[, 1:5]</code></pre>
+<pre><code>##        confused right words sensations   describe analyze problems
+## [1,] -8.4662585  -7.3375812 -2.2012950  6.1597661        0.4271093
+## [2,]  3.3642487  -2.5380829 -0.2684529  4.9595077        6.2443158
+## [3,] -1.4118650  -4.4348404  1.4484525  1.8944371       -3.1435113
+## [4,]  1.1136577   1.0030862  2.0443923 -3.5188316        0.5622115
+## [5,]  0.8172586   0.7913444  5.2341517  0.5130866       -5.2948505</code></pre>
+<pre class="r"><code>    # Py
+    cbind(
+        Py = out$Py,
+        TtY = t(out$Te) %*% y,
+        WtXtY = t(out$W) %*% t(X) %*% y
+    )</code></pre>
+<pre><code>##           CES-D      CES-D      CES-D
+## [1,] -6.9315017 -6.9315017 -6.9315017
+## [2,]  0.7212995  0.7212995  0.7212995
+## [3,]  1.1114400  1.1114400  1.1114400
+## [4,] -0.2349069 -0.2349069 -0.2349069
+## [5,] -0.5126823 -0.5126823 -0.5126823</code></pre>
+<pre class="r"><code>    # B
+    cbind(
+        B = drop(out$B),
+        WPY = drop(out$W %*% out$Py),
+        WWtXtY = drop(out$W %*% t(out$W) %*% t(X) %*% y)
+    )</code></pre>
+<pre><code>##                  B          WPY       WWtXtY
+##  [1,]  0.383110912  0.383110912  0.383110912
+##  [2,]  0.019216602  0.019216602  0.019216602
+##  [3,] -0.032288901 -0.032288901 -0.032288901
+##  [4,] -0.016670641 -0.016670641 -0.016670641
+##  [5,]  0.086442108  0.086442108  0.086442108
+##  [6,] -0.185643598 -0.185643598 -0.185643598
+##  [7,]  0.145228530  0.145228530  0.145228530
+##  [8,] -0.016889454 -0.016889454 -0.016889454
+##  [9,]  0.019540943  0.019540943  0.019540943
+## [10,] -0.129790008 -0.129790008 -0.129790008
+## [11,]  0.011837598  0.011837598  0.011837598
+## [12,] -0.060783224 -0.060783224 -0.060783224
+## [13,]  0.214728328  0.214728328  0.214728328
+## [14,]  0.182671533  0.182671533  0.182671533
+## [15,]  0.044201180  0.044201180  0.044201180
+## [16,] -0.002997744 -0.002997744 -0.002997744
+## [17,]  0.041239398  0.041239398  0.041239398
+## [18,]  0.035879278  0.035879278  0.035879278
+## [19,] -0.131120013 -0.131120013 -0.131120013
+## [20,] -0.049644574 -0.049644574 -0.049644574</code></pre>
+<pre class="r"><code># Maximum likelihood tuning of alpha -------------------------------------------
+
+    # Fit PCovR
+    pcovr_out &lt;- pcovr(
+        X = X_raw,
+        Y = y_raw,
+        rot = &quot;none&quot;,
+        R = npcs, # fixed number of components
+        modsel = &quot;seq&quot; # fastest option
+    )
+
+    # Compute error ratio with function
+    err &lt;- ErrorRatio(
+        X = X,
+        Y = y,
+        Rmin = npcs,
+        Rmax = npcs
+    )
+
+    # Compute error ratio components
+    lm_mod &lt;- lm(y ~ -1 + X)
+    ery &lt;- 1 - summary(lm_mod)$r.squared
+
+    Rmin &lt;- npcs
+    Rmax &lt;- npcs
+    sing &lt;- svd(X)
+    vec &lt;- Rmin:Rmax
+    vec &lt;- c(vec[1] - 1, vec, vec[length(vec)] + 1)
+    VAF &lt;- c(0, cumsum(sing$d^2) / sum(sing$d^2))
+    VAF &lt;- VAF[vec + 1]
+    scr &lt;- array(NA, c(1, length(vec)))
+    for (u in 2:(length(vec) - 1)) {
+        scr[, u] &lt;- (VAF[u] - VAF[u - 1]) / (VAF[u + 1] - VAF[u])
+    }
+    erx &lt;- 1 - VAF[which.max(scr)]
+
+    # Find alpha ML
+    alpha_ML &lt;- sum(X^2) / (sum(X^2) + sum(y^2) * erx / ery)
+
+    # Compare to one found by package
+    pcovr_out$a - alpha_ML</code></pre>
+<pre><code>## [1] 0</code></pre>
+</div>
+<div id="tldr-just-give-me-the-code" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> TL;DR, just give me the code!</h1>
+<pre class="r"><code># Set up environment -----------------------------------------------------------
+
+    # Load pacakge that implements this method
+    library(&quot;PCovR&quot;, verbose = FALSE, quietly = TRUE)
+
+    # Load example data from PCovR package
+    data(alexithymia)
+
+    # Explore its scale
+    colMeans(alexithymia$X)
+    colMeans(alexithymia$Y)
+
+    apply(alexithymia$X, 2, var)
+    apply(alexithymia$Y, 2, var)
+
+    # Subset data
+    X_raw &lt;- alexithymia$X
+    y_raw &lt;- alexithymia$Y[, 1, drop = FALSE]
+
+    # Define paramters that can be useful
+    n &lt;- nrow(X_raw)
+    p &lt;- ncol(X_raw)
+
+    # Scale data
+    X &lt;- scale(X_raw)# * (n - 1) / n
+    y &lt;- scale(y_raw)# * (n - 1) / n
+
+    # Define parameters
+    alpha &lt;- .5 # weighting parameter
+    npcs &lt;- 5
+
+# Estimation -------------------------------------------------------------------
+
+    # Estimate with PCovR function
+    out &lt;- PCovR::pcovr_est(
+        X = X,
+        Y = y,
+        a = alpha,
+        r = npcs # fixed number of components
+    )
+
+    # Estimate manually (Vervolet version)
+    Hx &lt;- X %*% solve(t(X) %*% X) %*% t(X)
+    G_vv &lt;- alpha * X %*% t(X) / sum(X^2) + (1 - alpha) * Hx %*% y %*% t(y) %*% Hx / sum(y^2)
+    EG_vv &lt;- eigen(G_vv) # eigen-decomposition of matrix
+    T_vv &lt;- EG_vv$vectors[, 1:npcs]
+
+# Compare results --------------------------------------------------------------
+
+    # T scores
+    Ts &lt;- list(
+        PCovR = head(out$Te),
+        PCovR_man = head(X %*% out$W),
+        Vervolet = head(T_vv)
+    )
+
+    # Weights
+    W &lt;- list(
+        PCovR = out$W,
+        Vervolet = solve(t(X) %*% X) %*% t(X) %*% T_vv
+    )
+
+    # Px
+    ( t(out$Te) %*% X )[, 1:5]
+    ( t(out$W) %*% t(X) %*% X )[, 1:5]
+    out$Px[, 1:5]
+
+    # Py
+    cbind(
+        Py = out$Py,
+        TtY = t(out$Te) %*% y,
+        WtXtY = t(out$W) %*% t(X) %*% y
+    )
+
+    # B
+    cbind(
+        B = drop(out$B),
+        WPY = drop(out$W %*% out$Py),
+        WWtXtY = drop(out$W %*% t(out$W) %*% t(X) %*% y)
+    )
+
+# Maximum likelihood tuning of alpha -------------------------------------------
+
+    # Fit PCovR
+    pcovr_out &lt;- pcovr(
+        X = X_raw,
+        Y = y_raw,
+        rot = &quot;none&quot;,
+        R = npcs, # fixed number of components
+        modsel = &quot;seq&quot; # fastest option
+    )
+
+    # Compute error ratio with function
+    err &lt;- ErrorRatio(
+        X = X,
+        Y = y,
+        Rmin = npcs,
+        Rmax = npcs
+    )
+
+    # Compute error ratio components
+    lm_mod &lt;- lm(y ~ -1 + X)
+    ery &lt;- 1 - summary(lm_mod)$r.squared
+
+    Rmin &lt;- npcs
+    Rmax &lt;- npcs
+    sing &lt;- svd(X)
+    vec &lt;- Rmin:Rmax
+    vec &lt;- c(vec[1] - 1, vec, vec[length(vec)] + 1)
+    VAF &lt;- c(0, cumsum(sing$d^2) / sum(sing$d^2))
+    VAF &lt;- VAF[vec + 1]
+    scr &lt;- array(NA, c(1, length(vec)))
+    for (u in 2:(length(vec) - 1)) {
+        scr[, u] &lt;- (VAF[u] - VAF[u - 1]) / (VAF[u + 1] - VAF[u])
+    }
+    erx &lt;- 1 - VAF[which.max(scr)]
+
+    # Find alpha ML
+    alpha_ML &lt;- sum(X^2) / (sum(X^2) + sum(y^2) * erx / ery)
+
+    # Compare to one found by package
+    pcovr_out$a - alpha_ML</code></pre>
+</div>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-de1992principal" class="csl-entry">
+De Jong, Sijmen, and Henk AL Kiers. 1992. <span>“Principal Covariates Regression: Part i. Theory.”</span> <em>Chemometrics and Intelligent Laboratory Systems</em> 14 (1-3): 155–64.
+</div>
+<div id="ref-vervloet2015pcovr" class="csl-entry">
+Vervloet, Marlies, Henk AL Kiers, Wim Van den Noortgate, and Eva Ceulemans. 2015. <span>“PCovR: An r Package for Principal Covariates Regression.”</span> <em>Journal of Statistical Software</em> 65: 1–14.
+</div>
+</div>
+</div>

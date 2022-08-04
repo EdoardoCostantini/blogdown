@@ -46,6 +46,9 @@ social:
 - icon: linkedin
   icon_pack: fab
   link: https://www.linkedin.com/in/edoardo-costantini-78352b137/
+- icon: goodreads
+  icon_pack: fab
+  link: https://www.goodreads.com/user/show/59140592-edoardo-costantini
 
 # Link to a PDF of your resume/CV from the About widget.
 # To use: copy your resume to `static/uploads/resume.pdf`, enable `ai` icons in `params.toml`,

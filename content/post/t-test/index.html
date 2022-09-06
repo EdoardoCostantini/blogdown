@@ -1,0 +1,61 @@
+---
+title: Understanding t-tests
+draft: true # true
+author: Edoardo Costantini
+date: '2022-09-06'
+slug: t-test
+categories: ["Knowledge snippet", "Statistics and Methodology"]
+tags: ["statistics", "inference", "distributions"]
+subtitle: ''
+summary: 't-test'
+authors: ["admin"]
+lastmod: '2022-09-05T14:26:57+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+toc: true
+---
+
+
+<div id="TOC">
+
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>A t-test is an inferential statistic used to draw conclusions based on comparisons between means.
+Like any statistical test, it weights the estimated effect by the precision of the estimate.</p>
+<p><span class="math display">\[
+\text{test statistic} = \frac{\text{estimate} − \text{Null Hypothesized Value}}{\text{Variability}}
+\]</span></p>
+<p>The shape this formula takes depends on the type of test we want to perform.
+T-tests are used to compare means, so the value of <code>estimate</code> and the <code>Null-Hypothesized Value</code> will be means and the variability will be the standard error of the mean.</p>
+<div id="sample-t-test" class="section level3">
+<h3>1-sample t-test</h3>
+<p>The simplest form of t-test is what is known as a 1-</p>
+</div>
+<div id="sample-t-test-1" class="section level3">
+<h3>2-sample t-test</h3>
+<div id="unequal-group-sizes" class="section level4">
+<h4>Unequal group sizes</h4>
+</div>
+<div id="unequal-variances-between-groups" class="section level4">
+<h4>Unequal variances between groups</h4>
+</div>
+</div>
+</div>
+<div id="tldr-just-give-me-the-code" class="section level2">
+<h2>TL;DR, just give me the code!</h2>
+<pre class="r"><code># shinyApp(
+#     ui = fluidPage(
+#       numericInput(&quot;n&quot;, &quot;n&quot;, 1),
+#       plotOutput(&quot;plot&quot;)
+#     ),
+#     server = function(input, output) {
+#       output$plot &lt;- renderPlot( plot(head(cars, input$n)) )
+#     }
+#   )</code></pre>
+</div>

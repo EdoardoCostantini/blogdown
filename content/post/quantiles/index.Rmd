@@ -4,12 +4,12 @@ draft: false # true
 author: Edoardo Costantini
 date: '2022-09-06'
 slug: quantiles
-categories: ["Knowledge snippet"]
+categories: ["Knowledge snippet", "Statistics and Methodology"]
 tags: ["statistics", "distributions"]
 subtitle: ''
 summary: 'Explanation and visualization of quantiles, percentiles, deciles, and quartiles'
 authors: ["admin"]
-lastmod: '2022-04-02T14:26:57+02:00'
+lastmod: '2022-09-05T14:26:57+02:00'
 featured: no
 image:
   caption: ''
